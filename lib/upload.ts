@@ -30,11 +30,14 @@ export async function compressImage(file: File, maxDim = 800, quality = 0.85): P
   canvas.height = height;
   const ctx = canvas.getContext("2d")!;
 
-  // 🌟 Fill solid crisp white background so transparent PNGs render cleanly without black/gray artifacts
+  // 🌟 Fill solid crisp white background
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, width, height);
 
   ctx.drawImage(img, 0, 0, width, height);
+
+  // 🤖 Autonomous background cleaner — detects fake checkerboard grid squares and cleans them to pure white
+  removeCheckerboardBackground(ctx, width, height);
 
   const outDataUrl = canvas.toDataURL("image/jpeg", quality);
   const blob = await (await fetch(outDataUrl)).blob();
@@ -43,6 +46,45 @@ export async function compressImage(file: File, maxDim = 800, quality = 0.85): P
   });
 
   return { file: outFile, width, height, dataUrl: outDataUrl };
+}
+
+export function removeCheckerboardBackground(ctx: CanvasRenderingContext2D, width: number, height: number) {
+  try {
+    const imgData = ctx.getImageData(0, 0, width, height);
+    const data = imgData.data;
+
+    // Helper: is pixel neutral light gray or white (fake PNG grid square)?
+    const isGridColor = (r: number, g: number, b: number) => {
+      const diff = Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b));
+      return diff <= 12 && r >= 170;
+    };
+
+    // Check top corner for checkerboard grid pattern
+    let gridCount = 0;
+    const sampleSize = 25;
+    for (let y = 0; y < Math.min(sampleSize, height); y++) {
+      for (let x = 0; x < Math.min(sampleSize, width); x++) {
+        const idx = (y * width + x) * 4;
+        if (isGridColor(data[idx], data[idx + 1], data[idx + 2])) {
+          gridCount++;
+        }
+      }
+    }
+
+    // If top corner contains fake checkerboard pattern, replace grid pixels with pure white
+    if (gridCount > (sampleSize * sampleSize) * 0.55) {
+      for (let i = 0; i < data.length; i += 4) {
+        if (isGridColor(data[i], data[i + 1], data[i + 2])) {
+          data[i] = 255;
+          data[i + 1] = 255;
+          data[i + 2] = 255;
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+  } catch (err) {
+    console.warn("Background cleaning skipped:", err);
+  }
 }
 
 function readAsDataURL(file: File): Promise<string> {
