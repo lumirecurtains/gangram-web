@@ -3,12 +3,25 @@
 // 🍛 Menu grid — premium animated cards (demo jaisa)
 // Photo ho toh: fade-in + hover zoom + gradient overlay + veg badge + tag
 // Photo na ho toh: gradient + emoji fallback
-// Naya item add hote hi card reveal animation (real-time)
+// 🩹 FIX (Claude audit): onLoad timing bug — cached image pe fade-in ab guaranteed dikhta hai
 
 import { MenuItem } from "@/lib/types";
 import { useCart } from "@/contexts/CartContext";
 
 const GRADS = ["bg-1", "bg-2", "bg-3", "bg-4", "bg-5", "bg-6"];
+
+// 🩹 FIX: double requestAnimationFrame — browser ko pehle "opacity:0, scale(1.12)"
+// starting state paint karne ka mauka deta hai, PHIR "loaded" class add hoti hai.
+// Iske bina cached/fast-loading image ek hi paint mein opacity:1 ho jati thi
+// aur fade-in + zoom animation kabhi dikhta hi nahi tha.
+function markLoaded(img: HTMLImageElement) {
+  if (img.classList.contains("loaded")) return;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      img.classList.add("loaded");
+    });
+  });
+}
 
 export default function MenuGrid({ items }: { items: MenuItem[] }) {
   const { add } = useCart();
@@ -32,7 +45,12 @@ export default function MenuGrid({ items }: { items: MenuItem[] }) {
                 src={m.photo}
                 alt={m.name}
                 loading="lazy"
-                onLoad={(e) => (e.currentTarget as HTMLImageElement).classList.add("loaded")}
+                // 🩹 FIX: already-cached image pe kuch browsers onLoad fire hi nahi karte —
+                // ref callback check karta hai ki image pehle se complete hai toh markLoaded
+                ref={(el) => {
+                  if (el && el.complete && el.naturalWidth > 0) markLoaded(el);
+                }}
+                onLoad={(e) => markLoaded(e.currentTarget as HTMLImageElement)}
               />
             ) : (
               <span className="card-emoji">{m.emoji || "🍽️"}</span>

@@ -80,10 +80,12 @@ header.site{position:sticky;top:0;z-index:40;background:rgba(255,250,240,.85);ba
 .card{background:var(--card);border-radius:var(--r);border:1px solid var(--line);overflow:hidden;box-shadow:var(--shadow-sm);opacity:0;transform:translateY(22px) scale(.97);animation:cardIn .5s cubic-bezier(.22,1,.36,1) forwards}
 @keyframes cardIn{to{opacity:1;transform:translateY(0) scale(1)}}
 .card:active{transform:scale(.97)}
-.card-img{height:118px;position:relative;overflow:hidden;display:grid;place-items:center;font-size:46px;background:#fde68a}
-.card-img img{width:100%;height:100%;object-fit:cover}
-.card-img .tag{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;font-size:9.5px;font-weight:700;padding:3px 8px;border-radius:99px;backdrop-filter:blur(4px)}
-.card-img .tag.sold{background:var(--rose);left:8px;right:auto}
+.tag-legacy-removed-marker{}
+/* NOTE: the old .card-img base block (height:118px, no fade-in) was removed
+   here — it was dead/superseded legacy CSS living alongside the premium
+   .card-img block further below, and having two conflicting definitions of
+   the same selector made this file confusing to maintain. The premium block
+   (search for ".card-img.has-photo" below) is now the single source of truth. */
 .card-body{padding:11px 12px 13px}
 .card-body h3{font-size:14px;font-weight:800;line-height:1.3;margin-bottom:3px}
 .card-body .desc{font-size:11.5px;color:var(--ink-soft);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:8px}
