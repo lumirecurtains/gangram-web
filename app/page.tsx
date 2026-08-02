@@ -3,6 +3,7 @@
 // 🏠 Main page — real-time Firebase data + saare components (demo animations)
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { CartProvider } from "@/contexts/CartContext";
 import { Category, MenuItem, Settings } from "@/lib/types";
 import { onCategories, onMenuItems, onSettings } from "@/lib/data";
@@ -10,6 +11,7 @@ import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import CategoryChips from "@/components/CategoryChips";
 import MenuGrid from "@/components/MenuGrid";
+import ReviewsSection from "@/components/ReviewsSection";
 import CartDrawer from "@/components/CartDrawer";
 import CheckoutModal from "@/components/CheckoutModal";
 import SuccessOverlay from "@/components/SuccessOverlay";
@@ -45,10 +47,13 @@ export default function HomePage() {
         <span className="link">Sab Shakahari 🟢</span>
       </div>
       <MenuGrid items={visible} />
+      <ReviewsSection />
       <footer className="foot">
         <b>{settings?.name || "Gangaram Dairy"}</b> · {settings?.address || ""}
         <br />
         🕗 {settings?.hours || "8 AM – 10 PM"} · Direct Order — No Commission
+        <br />
+        <Link href="/order-history" style={{ color: "#fbbf24", textDecoration: "underline" }}>📜 Apne Orders Dekho / Review Do</Link>
       </footer>
       <CartDrawer settings={settings || ({} as Settings)} />
       <CheckoutModal settings={settings || ({} as Settings)} />

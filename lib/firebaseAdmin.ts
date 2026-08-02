@@ -3,6 +3,7 @@
 
 import { initializeApp, cert, getApps, getApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
 import fs from "fs";
 import path from "path";
 
@@ -21,4 +22,5 @@ const app =
     : initializeApp({ credential: cert(getServiceAccount()) });
 
 export const adminDb = getFirestore(app);
+export const adminAuth = getAuth(app);
 export default app;
