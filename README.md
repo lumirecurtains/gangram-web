@@ -77,3 +77,44 @@ npm run dev
 ```
 
 **Next:** Step 2 — Customer-facing (Homepage → Categories → Menu → Cart → Checkout). User ke "NEXT" bolne ka wait.
+
+---
+
+## 🚀 STEP 2 — Customer-Facing App (DONE) — 2026-08-02
+
+**Kya bana:**
+- `lib/types.ts` — saare types (Settings, Category, MenuItem, Order, Review)
+- `lib/data.ts` — real-time Firestore data (onSnapshot — owner changes turant dikhte hain)
+- `contexts/CartContext.tsx` — cart state (localStorage persist)
+- `components/` — Header (open/closed pill), Hero (animations), CategoryChips, MenuGrid (reveal + fly-to-cart), CartDrawer, CheckoutModal (bands + bill), SuccessOverlay (checkmark), Toast
+- `app/page.tsx` — sab compose (real-time data)
+- `app/api/orders/route.ts` — order create (server-side, order number GD-XXXX)
+- `firestore.rules` — REAL rules (public read menu, owner write, orders server-only)
+- `scripts/seed.mjs` — demo data populate (npm run seed)
+
+**Test results:** build pass, home 200, orders API validation working, health ok:true
+
+## 🚀 CHALANE KE LIYE (2 steps)
+
+### Step A: Seed data daalo (ek baar)
+```bash
+npm run seed
+```
+> ⚠️ Pehle `scripts/seed.mjs` kholo — settings mein `ownerEmails` array mein apna email daalo
+> (owner dashboard login ke liye). Phir run karo.
+
+### Step B: Rules deploy karo (ek baar)
+```bash
+firebase deploy --only firestore:rules
+```
+
+### Step C: App chalao
+```bash
+npm run dev
+```
+→ http://localhost:3000 — menu real Firebase se aayega, add to cart, checkout, WhatsApp order!
+
+## 📌 Notes
+- Menu mein photo nahi hai toh gradient + emoji fallback (demo jaisa) — owner Cloudinary se photo daalega
+- Order number: GD-1001, GD-1002... (settings mein counter)
+- Owner dashboard = Step 4 (abhi baaki)

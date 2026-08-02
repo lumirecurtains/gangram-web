@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: logged in?
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Helper: kya ye user owner/super admin hai?
+    // settings/main mein ownerEmails array hota hai (rules wahan se padhti hain)
+    function isOwner() {
+      return signedIn() &&
+        (get(/databases/$(database)/documents/settings/main)).data.ownerEmails.hasAny([request.auth.token.email]);
+    }
+
+    // ---------- SETTINGS (public read, owner write) ----------
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+
+    // ---------- CATEGORIES (public read, owner write) ----------
+    match /categories/{docId} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+
+    // ---------- MENU ITEMS (public read, owner write) ----------
+    match /menuItems/{docId} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+
+    // ---------- ORDERS (server-side admin SDK se bante hain — client write deny) ----------
+    match /orders/{orderId} {
+      allow read: if isOwner();
+      allow create: if false;   // sirf server (admin SDK) create karta hai
+      allow update, delete: if false;
+    }
+
+    // ---------- CUSTOMERS (owner read; phone-based, server writes) ----------
+    match /customers/{docId} {
+      allow read: if isOwner();
+      allow write: if false;
+    }
+
+    // ---------- REVIEWS (public read, customer create, owner moderate) ----------
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if signedIn();
+      allow update, delete: if isOwner();
+    }
+
+    // ---------- ADMIN USERS (owner/super only) ----------
+    match /adminUsers/{uid} {
+      allow read, write: if isOwner();
+    }
+  }
+}

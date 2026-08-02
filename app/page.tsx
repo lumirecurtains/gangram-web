@@ -1,25 +1,59 @@
-import Link from "next/link";
-import ClientFirebaseStatus from "./ClientFirebaseStatus";
+"use client";
 
-export default function Home() {
+// 🏠 Main page — real-time Firebase data + saare components (demo animations)
+
+import { useEffect, useState } from "react";
+import { CartProvider } from "@/contexts/CartContext";
+import { Category, MenuItem, Settings } from "@/lib/types";
+import { onCategories, onMenuItems, onSettings } from "@/lib/data";
+import Header from "@/components/Header";
+import Hero from "@/components/Hero";
+import CategoryChips from "@/components/CategoryChips";
+import MenuGrid from "@/components/MenuGrid";
+import CartDrawer from "@/components/CartDrawer";
+import CheckoutModal from "@/components/CheckoutModal";
+import SuccessOverlay from "@/components/SuccessOverlay";
+import Toast from "@/components/Toast";
+
+export default function HomePage() {
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [items, setItems] = useState<MenuItem[]>([]);
+  const [activeCat, setActiveCat] = useState<string>("");
+
+  useEffect(() => {
+    const unsubs = [
+      onSettings(setSettings),
+      onCategories((cats) => {
+        setCategories(cats);
+        if (!activeCat && cats.length) setActiveCat(cats[0].id);
+      }),
+      onMenuItems(setItems),
+    ];
+    return () => unsubs.forEach((u) => u());
+  }, [activeCat]);
+
+  const visible = activeCat ? items.filter((m) => m.categoryId === activeCat) : items;
+
   return (
-    <main>
-      <h1>🥛 Gangaram Dairy — Pilot</h1>
-      <p>
-        <b>Step 1: Firebase + Cloudinary connection skeleton.</b>
-        Abhi koi feature nahi — sirf connections check ho rahe hain.
-      </p>
-
-      <div className="status-card">
-        <h2>🔌 Connection Status</h2>
-        <div className="status-item">
-          <span>📡 Server (Admin SDK)</span>
-          <a href="/api/health" style={{ color: "#d97706", fontWeight: 700 }}>API check karo →</a>
-        </div>
-        <ClientFirebaseStatus />
+    <CartProvider>
+      <Header settings={settings || ({} as Settings)} />
+      <Hero settings={settings || ({} as Settings)} />
+      <CategoryChips categories={categories} active={activeCat} onSelect={setActiveCat} />
+      <div className="sec-title" style={{ padding: "0 16px" }}>
+        <h2>🍽️ Hamara Menu</h2>
+        <span className="link">Sab Shakahari 🟢</span>
       </div>
-
-      <Link className="btn" href="/api/health">🔍 Server Health Check (Firebase Admin + Cloudinary)</Link>
-    </main>
+      <MenuGrid items={visible} />
+      <footer className="foot">
+        <b>{settings?.name || "Gangaram Dairy"}</b> · {settings?.address || ""}
+        <br />
+        🕗 {settings?.hours || "8 AM – 10 PM"} · Direct Order — No Commission
+      </footer>
+      <CartDrawer settings={settings || ({} as Settings)} />
+      <CheckoutModal settings={settings || ({} as Settings)} />
+      <SuccessOverlay />
+      <Toast />
+    </CartProvider>
   );
 }
