@@ -1,14 +1,14 @@
 "use client";
 
-// 🍛 Menu grid — cards with reveal animation, veg badge, tag, photo/emoji fallback
-// Owner koi bhi photo daale — uniform crop + premium look (LOCKED-DECISIONS Decision 1)
+// 🍛 Menu grid — premium animated cards (demo jaisa)
+// Photo ho toh: fade-in + hover zoom + gradient overlay + veg badge + tag
+// Photo na ho toh: gradient + emoji fallback
+// Naya item add hote hi card reveal animation (real-time)
 
 import { MenuItem } from "@/lib/types";
 import { useCart } from "@/contexts/CartContext";
 
-const GRADS = [
-  "bg-1", "bg-2", "bg-3", "bg-4", "bg-5", "bg-6",
-];
+const GRADS = ["bg-1", "bg-2", "bg-3", "bg-4", "bg-5", "bg-6"];
 
 export default function MenuGrid({ items }: { items: MenuItem[] }) {
   const { add } = useCart();
@@ -26,13 +26,19 @@ export default function MenuGrid({ items }: { items: MenuItem[] }) {
     <div className="grid">
       {items.map((m, i) => (
         <div className="card" key={m.id} style={{ animationDelay: `${(i % 8) * 60}ms` }}>
-          <div className={`card-img ${GRADS[i % GRADS.length]}`}>
+          <div className={`card-img ${m.photo ? "has-photo" : GRADS[i % GRADS.length]}`}>
             {m.photo ? (
-              <img src={m.photo} alt={m.name} loading="lazy" />
+              <img
+                src={m.photo}
+                alt={m.name}
+                loading="lazy"
+                onLoad={(e) => (e.currentTarget as HTMLImageElement).classList.add("loaded")}
+              />
             ) : (
-              <span style={{ fontSize: 46 }}>{m.emoji || "🍽️"}</span>
+              <span className="card-emoji">{m.emoji || "🍽️"}</span>
             )}
-            <span className="veg-badge" style={{ background: "rgba(255,255,255,.92)", padding: 3, borderRadius: 5 }}></span>
+            <span className="img-shade"></span>
+            <span className="veg-badge veg-overlay"></span>
             {m.tag ? <span className="tag">🔥 {m.tag}</span> : null}
             {!m.available && <span className="tag sold">Sold Out</span>}
           </div>
@@ -59,7 +65,7 @@ export default function MenuGrid({ items }: { items: MenuItem[] }) {
   );
 }
 
-// ✈️ Flying emoji animation — add karte hi 🍛 cart tak udta hai (demo jaisa)
+// ✈️ Flying emoji — add karte hi cart tak udta hai
 function flyToCart(btn: HTMLButtonElement) {
   const dot = document.createElement("div");
   dot.style.cssText = `position:fixed;font-size:22px;z-index:99;pointer-events:none;transition:all .7s cubic-bezier(.3,.8,.3,1);left:${btn.getBoundingClientRect().left + 8}px;top:${btn.getBoundingClientRect().top + 8}px`;
