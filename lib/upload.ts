@@ -9,9 +9,9 @@ export interface CompressResult {
   dataUrl?: string; // preview ke liye optional
 }
 
-export async function compressImage(file: File, maxDim = 800, quality = 0.82): Promise<CompressResult> {
-  // Agar already chhoti hai (SVG ya < 300KB) toh seedha bhej do
-  if (file.size < 300 * 1024 || file.type === "image/svg+xml") {
+export async function compressImage(file: File, maxDim = 800, quality = 0.85): Promise<CompressResult> {
+  // SVG files are vector, return as is
+  if (file.type === "image/svg+xml") {
     return { file, width: 0, height: 0 };
   }
 
@@ -29,6 +29,11 @@ export async function compressImage(file: File, maxDim = 800, quality = 0.82): P
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d")!;
+
+  // 🌟 Fill solid crisp white background so transparent PNGs render cleanly without black/gray artifacts
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+
   ctx.drawImage(img, 0, 0, width, height);
 
   const outDataUrl = canvas.toDataURL("image/jpeg", quality);

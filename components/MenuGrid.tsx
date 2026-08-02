@@ -107,7 +107,9 @@ function MenuCard({
           </motion.span>
         )}
         <span className="img-shade"></span>
-        <span className="veg-badge veg-overlay"></span>
+        <span className="veg-overlay">
+          <span className="veg-badge"></span>
+        </span>
         {m.tag ? (
           <motion.span
             className="tag"
