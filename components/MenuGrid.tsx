@@ -29,24 +29,13 @@ export default function MenuGrid({ items }: { items: MenuItem[] }) {
   }
 
   return (
-    <motion.div
-      className="grid"
-      initial="hidden"
-      animate="visible"
-      variants={{
-        hidden: { opacity: 0 },
-        visible: {
-          opacity: 1,
-          transition: { staggerChildren: 0.08 },
-        },
-      }}
-    >
+    <div className="grid">
       <AnimatePresence mode="popLayout">
         {items.map((m, i) => (
           <MenuCard key={m.id} m={m} i={i} add={add} />
         ))}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }
 
@@ -65,15 +54,10 @@ function MenuCard({
     <motion.div
       layout
       className="card motion-card"
-      variants={{
-        hidden: { opacity: 0, y: 24, scale: 0.95 },
-        visible: {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          transition: { type: "spring", stiffness: 350, damping: 25 },
-        },
-      }}
+      initial={{ opacity: 0, y: 20, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.35, delay: Math.min((i % 8) * 0.05, 0.3), ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -5, boxShadow: "0 14px 35px rgba(245,158,11,0.22)" }}
       whileTap={{ scale: 0.97 }}
     >
