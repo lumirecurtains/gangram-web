@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "seed": "node scripts/seed.mjs"
   },
   "dependencies": {
     "cloudinary": "^2.6.0",
