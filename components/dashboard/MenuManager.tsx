@@ -234,36 +234,57 @@ export default function MenuManager() {
               <AnimatePresence>
                 {(photo || photoUrl) && (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    style={{ position: "relative", display: "inline-block", marginTop: 8 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    style={{ marginTop: 12 }}
                   >
-                    <img
-                      src={photo || photoUrl}
-                      alt="preview"
-                      style={{ width: 84, height: 84, objectFit: "cover", borderRadius: 14, boxShadow: "0 6px 16px rgba(0,0,0,0.12)" }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => { setPhoto(""); setPhotoUrl(""); }}
-                      style={{
-                        position: "absolute",
-                        top: -6,
-                        right: -6,
-                        background: "#ef4444",
-                        color: "#fff",
-                        width: 20,
-                        height: 20,
-                        borderRadius: "50%",
-                        fontSize: 11,
-                        display: "grid",
-                        placeItems: "center",
-                        cursor: "pointer",
-                      }}
-                    >
-                      ✕
-                    </button>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#78716c", marginBottom: 6 }}>
+                      ✨ Web Page Live Card Preview:
+                    </div>
+                    <div className="card motion-card" style={{ maxWidth: 240, position: "relative" }}>
+                      <div className="card-img has-photo" style={{ height: 145 }}>
+                        <img src={photo || photoUrl} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <span className="img-shade" />
+                        <span className="veg-overlay">
+                          <span className="veg-badge" />
+                        </span>
+                        {tag ? <span className="tag">🔥 {tag}</span> : null}
+                      </div>
+                      <div className="card-body">
+                        <h3>{name || "Dish Name"}</h3>
+                        <p className="desc">{desc || "Dish description..."}</p>
+                        <div className="price-row">
+                          <div className="price">
+                            ₹{price || "0"}
+                            <small> / plate</small>
+                          </div>
+                          <button type="button" className="add-btn">+</button>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setPhoto(""); setPhotoUrl(""); }}
+                        style={{
+                          position: "absolute",
+                          top: 8,
+                          right: 8,
+                          background: "#ef4444",
+                          color: "#fff",
+                          width: 24,
+                          height: 24,
+                          borderRadius: "50%",
+                          fontSize: 12,
+                          display: "grid",
+                          placeItems: "center",
+                          cursor: "pointer",
+                          zIndex: 10,
+                          border: "none",
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
