@@ -62,13 +62,11 @@ export function onMenuItems(cb: (m: MenuItem[]) => void): Unsubscribe {
   );
 }
 
-// Open/Closed logic — business hours + manual override + holidays
-export function isRestaurantOpen(s: Settings, now = new Date()): boolean {
-  if (!s.open) return false;
-  const today = now.toISOString().slice(0, 10);
-  if (s.holidays?.includes(today)) return false;
-  const h = now.getHours();
-  return h >= (s.openHour ?? 8) && h < (s.closeHour ?? 22);
+// Open/Closed logic — manual owner override has highest priority
+export function isRestaurantOpen(s: Settings): boolean {
+  if (s.open === false) return false;
+  if (s.open === true) return true;
+  return true;
 }
 
 // Delivery charge — bands se
