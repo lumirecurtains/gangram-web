@@ -1,0 +1,86 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #fffaf0;
+  color: #292524;
+  min-height: 100vh;
+}
+
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+h1 {
+  font-size: 28px;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+p {
+  line-height: 1.6;
+  color: #57534e;
+  margin-bottom: 12px;
+}
+
+.status-card {
+  background: #ffffff;
+  border: 1px solid #f1e8dc;
+  border-radius: 16px;
+  padding: 20px;
+  margin-top: 20px;
+  box-shadow: 0 8px 30px rgba(120, 90, 20, 0.08);
+}
+
+.status-card h2 {
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px dashed #f1e8dc;
+  font-size: 14px;
+}
+
+.status-item:last-child {
+  border-bottom: none;
+}
+
+.ok {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.err {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+a.btn {
+  display: inline-block;
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+code {
+  background: #f5efe2;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 13px;
+}

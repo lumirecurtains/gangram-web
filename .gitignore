@@ -1,0 +1,16 @@
+# Secrets — GitHub pe kabhi mat bhejna!
+.env
+.env.local
+.env.*.local
+serviceAccountKey.json
+*.pem
+
+# Node
+node_modules/
+.next/
+out/
+build/
+
+# Misc
+.DS_Store
+*.log

@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Gangaram Dairy — Ghar Ka Swaad, Seedha Aapke Darwaze Tak</title>
+<meta name="description" content="Gangaram Dairy — vegetarian food delivery direct from the restaurant. No commission, no middleman. Order on WhatsApp.">
+<style>
+/* ============================================================
+   GANGARAM DAIRY PILOT — Frontend Demo (Mobile-first, Animated)
+   ============================================================ */
+:root{
+  --cream:#fffaf0; --card:#ffffff; --saffron:#f59e0b; --saffron-deep:#d97706;
+  --amber:#fbbf24; --green:#16a34a; --green-soft:#dcfce7; --ink:#292524;
+  --ink-soft:#78716c; --line:#f1e8dc; --rose:#e11d48;
+  --grad-brand:linear-gradient(135deg,#f59e0b 0%,#f97316 50%,#ef4444 100%);
+  --shadow-sm:0 2px 10px rgba(120,90,20,.08);
+  --shadow-md:0 8px 30px rgba(120,90,20,.14);
+  --shadow-lg:0 20px 60px rgba(120,90,20,.2);
+  --r:18px;
+  --font:'Segoe UI',system-ui,-apple-system,'Noto Sans Devanagari',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--cream);color:var(--ink);overflow-x:hidden}
+img{max-width:100%;display:block}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+a{text-decoration:none;color:inherit}
+
+/* ---------- helpers ---------- */
+.wrap{max-width:520px;margin:0 auto;padding:0 16px}
+.veg-badge{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1.5px solid var(--green);border-radius:3px;position:relative;flex-shrink:0}
+.veg-badge::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--green);position:absolute}
+.hidden{display:none!important}
+
+/* ---------- top ticker marquee ---------- */
+.ticker{background:var(--ink);color:#fef3c7;overflow:hidden;white-space:nowrap;padding:8px 0;font-size:12px;letter-spacing:.4px;position:relative}
+.ticker-track{display:inline-block;animation:ticker 22s linear infinite}
+.ticker span{margin:0 28px}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ---------- header ---------- */
+header.site{position:sticky;top:0;z-index:40;background:rgba(255,250,240,.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.header-in{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;max-width:520px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-logo{width:40px;height:40px;border-radius:13px;background:var(--grad-brand);display:grid;place-items:center;font-size:20px;box-shadow:var(--shadow-sm);animation:logoPop .6s cubic-bezier(.34,1.56,.64,1)}
+@keyframes logoPop{from{transform:scale(0) rotate(-20deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+.brand-name{font-weight:800;font-size:16px;line-height:1.15}
+.brand-name small{display:block;font-weight:600;font-size:11px;color:var(--ink-soft);letter-spacing:.3px}
+.header-right{display:flex;align-items:center;gap:10px}
+.open-pill{display:flex;align-items:center;gap:6px;background:var(--green-soft);color:var(--green);font-weight:700;font-size:11px;padding:6px 10px;border-radius:99px}
+.open-pill .dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 1.6s infinite}
+.open-pill.closed{background:#fee2e2;color:var(--rose)}
+.open-pill.closed .dot{background:var(--rose)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(22,163,74,.5)}50%{box-shadow:0 0 0 6px rgba(22,163,74,0)}}
+.cart-btn{position:relative;width:42px;height:42px;border-radius:14px;background:var(--card);box-shadow:var(--shadow-sm);display:grid;place-items:center;font-size:19px;border:1px solid var(--line)}
+.cart-btn .badge{position:absolute;top:-5px;right:-5px;background:var(--grad-brand);color:#fff;font-size:11px;font-weight:800;min-width:20px;height:20px;border-radius:99px;display:grid;place-items:center;padding:0 4px;transform:scale(0);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.cart-btn .badge.show{transform:scale(1);animation:badgeBounce .5s}
+@keyframes badgeBounce{0%{transform:scale(.4)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
+
+/* ---------- hero ---------- */
+.hero{position:relative;overflow:hidden;padding:34px 16px 30px;max-width:520px;margin:0 auto}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(600px 300px at 80% -10%,rgba(245,158,11,.22),transparent),radial-gradient(500px 260px at 10% 110%,rgba(22,163,74,.12),transparent);pointer-events:none}
+.hero h1{font-size:34px;line-height:1.15;font-weight:900;position:relative}
+.hero h1 .word{display:inline-block;overflow:hidden;vertical-align:bottom}
+.hero h1 .word span{display:inline-block;transform:translateY(110%);animation:rise .7s cubic-bezier(.22,1,.36,1) forwards}
+@keyframes rise{to{transform:translateY(0)}}
+.hero h1 .grad{background:var(--grad-brand);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--ink-soft);margin:12px 0 18px;font-size:14.5px;line-height:1.6;position:relative;opacity:0;animation:fadeUp .8s .4s forwards}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.hero-actions{display:flex;gap:10px;position:relative;opacity:0;animation:fadeUp .8s .55s forwards}
+.btn-primary{background:var(--grad-brand);color:#fff;font-weight:800;padding:13px 22px;border-radius:14px;font-size:14.5px;box-shadow:0 8px 24px rgba(249,115,22,.35);transition:transform .15s;position:relative;overflow:hidden}
+.btn-primary:active{transform:scale(.95)}
+.btn-primary::after{content:'';position:absolute;top:0;left:-80%;width:50%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);animation:shine 2.6s infinite}
+@keyframes shine{0%{left:-80%}60%,100%{left:130%}}
+.btn-ghost{background:var(--card);border:1.5px solid var(--line);font-weight:700;padding:13px 20px;border-radius:14px;font-size:14.5px;color:var(--ink)}
+.btn-ghost:active{transform:scale(.95)}
+.float-food{position:absolute;font-size:26px;opacity:0;animation:floaty 7s ease-in-out infinite;pointer-events:none}
+.float-food.f1{top:12%;left:6%;animation-delay:0s}
+.float-food.f2{top:58%;left:84%;animation-delay:1.2s;font-size:20px}
+.float-food.f3{top:20%;left:72%;animation-delay:2.1s;font-size:18px}
+@keyframes floaty{0%,100%{transform:translateY(0) rotate(-6deg);opacity:.35}50%{transform:translateY(-18px) rotate(8deg);opacity:.7}}
+
+/* ---------- section titles ---------- */
+.sec-title{display:flex;align-items:center;justify-content:space-between;margin:26px 0 14px}
+.sec-title h2{font-size:19px;font-weight:800}
+.sec-title .link{font-size:12.5px;color:var(--saffron-deep);font-weight:700}
+
+/* ---------- category chips ---------- */
+.chips{display:flex;gap:9px;overflow-x:auto;padding:4px 16px 10px;scrollbar-width:none;max-width:520px;margin:0 auto}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;padding:9px 16px;border-radius:99px;background:var(--card);border:1.5px solid var(--line);font-size:13.5px;font-weight:700;color:var(--ink-soft);transition:all .25s}
+.chip.active{background:var(--ink);color:#fff;border-color:var(--ink);transform:scale(1.04)}
+.chip:active{transform:scale(.95)}
+
+/* ---------- food cards ---------- */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:2px 16px 20px;max-width:520px;margin:0 auto}
+.card{background:var(--card);border-radius:var(--r);border:1px solid var(--line);overflow:hidden;box-shadow:var(--shadow-sm);opacity:0;transform:translateY(22px) scale(.97);transition:opacity .5s,transform .5s cubic-bezier(.22,1,.36,1),box-shadow .3s}
+.card.reveal{opacity:1;transform:translateY(0) scale(1)}
+.card:active{transform:scale(.97)}
+.card-img{height:118px;position:relative;overflow:hidden;display:grid;place-items:center;font-size:46px;transition:transform .5s}
+.card:hover .card-img{transform:scale(1.06)}
+.card-img .veg-badge{position:absolute;top:8px;left:8px;background:rgba(255,255,255,.9);padding:3px;border-radius:5px}
+.card-img .tag{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;font-size:9.5px;font-weight:700;padding:3px 8px;border-radius:99px;backdrop-filter:blur(4px)}
+.card-body{padding:11px 12px 13px}
+.card-body h3{font-size:14px;font-weight:800;line-height:1.3;margin-bottom:3px}
+.card-body .desc{font-size:11.5px;color:var(--ink-soft);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:8px}
+.price-row{display:flex;align-items:center;justify-content:space-between}
+.price{font-weight:900;font-size:15px}
+.price small{font-weight:600;color:var(--ink-soft);font-size:11px}
+.add-btn{width:32px;height:32px;border-radius:11px;background:var(--grad-brand);color:#fff;font-size:19px;font-weight:800;display:grid;place-items:center;box-shadow:0 4px 12px rgba(249,115,22,.35);transition:transform .15s}
+.add-btn:active{transform:scale(.8)}
+/* gradient backgrounds per category */
+.bg-1{background:linear-gradient(135deg,#fef3c7,#fde68a)}
+.bg-2{background:linear-gradient(135deg,#dcfce7,#bbf7d0)}
+.bg-3{background:linear-gradient(135deg,#fee2e2,#fecaca)}
+.bg-4{background:linear-gradient(135deg,#e0f2fe,#bae6fd)}
+.bg-5{background:linear-gradient(135deg,#f3e8ff,#e9d5ff)}
+.bg-6{background:linear-gradient(135deg,#ffedd5,#fed7aa)}
+
+/* ---------- offers strip ---------- */
+.offers{display:flex;gap:10px;overflow-x:auto;padding:2px 16px 4px;scrollbar-width:none;max-width:520px;margin:0 auto}
+.offers::-webkit-scrollbar{display:none}
+.offer{flex-shrink:0;display:flex;align-items:center;gap:8px;background:var(--card);border:1px dashed var(--saffron);border-radius:14px;padding:10px 14px;font-size:12px;font-weight:700;color:var(--saffron-deep)}
+.offer .ico{font-size:16px}
+
+/* ---------- reviews ---------- */
+.reviews{display:flex;gap:12px;overflow-x:auto;padding:4px 16px 24px;scrollbar-width:none;max-width:520px;margin:0 auto}
+.reviews::-webkit-scrollbar{display:none}
+.review{flex-shrink:0;width:250px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow-sm)}
+.review .stars{color:var(--saffron);font-size:13px;letter-spacing:1px;margin-bottom:6px}
+.review p{font-size:12.5px;line-height:1.55;color:var(--ink-soft)}
+.review .who{display:flex;align-items:center;gap:8px;margin-top:10px}
+.review .av{width:28px;height:28px;border-radius:50%;background:var(--grad-brand);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:800}
+.review .who b{font-size:12px}
+.review .who span{font-size:10.5px;color:var(--ink-soft)}
+
+/* ---------- footer ---------- */
+footer{background:var(--ink);color:#e7e5e4;padding:34px 16px 100px;text-align:center}
+footer .flogo{font-size:26px;margin-bottom:6px}
+footer h3{color:#fff;font-size:17px;margin-bottom:4px}
+footer p{font-size:12.5px;color:#a8a29e;line-height:1.7}
+footer .fbtns{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+
+/* ---------- bottom nav (mobile) ---------- */
+.bnav{position:fixed;bottom:0;left:0;right:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:8px 12px calc(10px + env(safe-area-inset-bottom))}
+.bnav-in{display:flex;justify-content:space-around;max-width:520px;margin:0 auto}
+.bnav-item{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:700;color:var(--ink-soft);padding:6px 14px;border-radius:14px;transition:all .2s;position:relative}
+.bnav-item .bi{font-size:19px;transition:transform .2s}
+.bnav-item.active{color:var(--saffron-deep)}
+.bnav-item.active .bi{transform:translateY(-2px) scale(1.1)}
+.bnav-item.active::before{content:'';position:absolute;top:-8px;width:26px;height:3px;border-radius:99px;background:var(--grad-brand);animation:navIn .3s}
+@keyframes navIn{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+/* ---------- cart drawer ---------- */
+.overlay{position:fixed;inset:0;background:rgba(28,25,23,.45);backdrop-filter:blur(3px);z-index:60;opacity:0;pointer-events:none;transition:opacity .3s}
+.overlay.show{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,92vw);background:var(--cream);z-index:70;transform:translateX(105%);transition:transform .4s cubic-bezier(.32,.72,.28,1);display:flex;flex-direction:column;border-radius:22px 0 0 22px;box-shadow:var(--shadow-lg)}
+.drawer.show{transform:translateX(0)}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;padding:18px 18px 12px;border-bottom:1px solid var(--line)}
+.drawer-head h3{font-size:17px;font-weight:800}
+.close-x{width:34px;height:34px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:16px;display:grid;place-items:center}
+.drawer-body{flex:1;overflow-y:auto;padding:14px 18px}
+.cart-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px dashed var(--line);animation:fadeUp .35s}
+.cart-item .ci-emoji{font-size:26px;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--card);box-shadow:var(--shadow-sm);flex-shrink:0}
+.cart-item .ci-info{flex:1}
+.cart-item .ci-info b{font-size:13.5px}
+.cart-item .ci-info .ci-price{font-size:12px;color:var(--ink-soft)}
+.qty{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:4px 6px}
+.qty button{width:26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;font-size:14px;font-weight:800;display:grid;place-items:center;transition:transform .12s}
+.qty button:active{transform:scale(.8)}
+.qty .q{font-weight:800;font-size:13.5px;min-width:14px;text-align:center}
+.drawer-foot{border-top:1px solid var(--line);padding:14px 18px 18px;background:var(--card)}
+.total-row{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px;color:var(--ink-soft)}
+.total-row b{color:var(--ink);font-size:16px}
+.checkout-btn{width:100%;margin-top:10px;padding:15px;border-radius:15px;background:var(--grad-brand);color:#fff;font-size:15.5px;font-weight:800;box-shadow:0 8px 24px rgba(249,115,22,.35);transition:transform .15s}
+.checkout-btn:active{transform:scale(.97)}
+.empty-cart{text-align:center;padding:50px 20px;color:var(--ink-soft)}
+.empty-cart .e{font-size:52px;margin-bottom:10px;animation:floaty 4s ease-in-out infinite}
+.empty-cart p{font-size:14px}
+
+/* ---------- checkout modal ---------- */
+.modal{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:18px;opacity:0;pointer-events:none;transition:opacity .3s}
+.modal.show{opacity:1;pointer-events:auto}
+.modal-box{background:var(--cream);width:100%;max-width:420px;border-radius:22px;padding:22px;box-shadow:var(--shadow-lg);transform:translateY(30px) scale(.95);transition:transform .4s cubic-bezier(.22,1,.36,1);max-height:88vh;overflow-y:auto}
+.modal.show .modal-box{transform:translateY(0) scale(1)}
+.modal-box h3{font-size:18px;font-weight:800;margin-bottom:14px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;padding:12px 14px;border-radius:13px;border:1.5px solid var(--line);background:var(--card);font-size:14px;font-family:inherit;outline:none;transition:border .2s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--saffron)}
+.band-options{display:flex;gap:8px;flex-wrap:wrap}
+.band-opt{flex:1;min-width:90px;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:9px 6px;text-align:center;font-size:11.5px;font-weight:700;transition:all .2s}
+.band-opt.active{border-color:var(--saffron);background:#fef3c7;box-shadow:var(--shadow-sm)}
+.band-opt small{display:block;font-weight:600;color:var(--ink-soft);font-size:10px}
+.bill{background:var(--card);border-radius:14px;padding:13px;margin-top:6px;border:1px solid var(--line)}
+.bill .row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:var(--ink-soft)}
+.bill .row.grand{font-weight:900;color:var(--ink);font-size:16px;border-top:1px dashed var(--line);margin-top:5px;padding-top:8px}
+.wa-btn{width:100%;margin-top:14px;padding:15px;border-radius:15px;background:#25d366;color:#fff;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 24px rgba(37,211,102,.35);transition:transform .15s}
+.wa-btn:active{transform:scale(.97)}
+
+/* ---------- success overlay ---------- */
+.success{position:fixed;inset:0;z-index:90;background:rgba(255,250,240,.96);backdrop-filter:blur(8px);display:grid;place-items:center;text-align:center;padding:30px;opacity:0;pointer-events:none;transition:opacity .3s}
+.success.show{opacity:1;pointer-events:auto}
+.check-wrap{width:110px;height:110px;margin:0 auto 18px;position:relative}
+.check-wrap svg{width:100%;height:100%}
+.check-circle{stroke-dasharray:300;stroke-dashoffset:300;animation:draw 0.6s ease forwards}
+.check-mark{stroke-dasharray:60;stroke-dashoffset:60;animation:draw 0.45s .45s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.success h2{font-size:24px;font-weight:900;margin-bottom:8px}
+.success p{color:var(--ink-soft);font-size:14px;line-height:1.6;margin-bottom:20px}
+.success .order-no{background:var(--ink);color:#fff;padding:10px 22px;border-radius:99px;font-weight:800;font-size:15px;display:inline-block;margin-bottom:20px;animation:pop .5s .6s backwards}
+@keyframes pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* ---------- toast ---------- */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:99px;font-size:13px;font-weight:700;z-index:95;opacity:0;pointer-events:none;transition:all .35s cubic-bezier(.22,1,.36,1)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- skeleton shimmer ---------- */
+.skel{height:118px;border-radius:var(--r);background:linear-gradient(100deg,#f5efe2 40%,#fdf9f0 50%,#f5efe2 60%);background-size:200% 100%;animation:shimmer 1.4s infinite}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+
+/* ---------- scroll reveal base ---------- */
+.rv{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s cubic-bezier(.22,1,.36,1)}
+.rv.in{opacity:1;transform:translateY(0)}
+
+@media(min-width:560px){
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .card-img{height:140px}
+  .hero h1{font-size:40px}
+}
+</style>
+</head>
+<body>
+
+<!-- TICKER -->
+<div class="ticker"><div class="ticker-track" id="tickerTrack">
+  <span>🥛 Ghar Ka Swaad, Seedha Aapke Darwaze Tak</span><span>🟢 100% Shuddh Shakahari (Pure Vegetarian)</span><span>🤝 No Commission — Direct Order</span><span>⏱️ 8 AM – 10 PM Open</span><span>🛵 Fast Delivery Aapke Area Mein</span>
+  <span>🥛 Ghar Ka Swaad, Seedha Aapke Darwaze Tak</span><span>🟢 100% Shuddh Shakahari (Pure Vegetarian)</span><span>🤝 No Commission — Direct Order</span><span>⏱️ 8 AM – 10 PM Open</span><span>🛵 Fast Delivery Aapke Area Mein</span>
+</div></div>
+
+<!-- HEADER -->
+<header class="site">
+  <div class="header-in">
+    <div class="brand">
+      <div class="brand-logo">🥛</div>
+      <div class="brand-name">Gangaram Dairy<small>Since 1985 · Pure Veg</small></div>
+    </div>
+    <div class="header-right">
+      <div class="open-pill" id="openPill"><span class="dot"></span><span id="openText">Open</span></div>
+      <button class="cart-btn" onclick="openCart()">🛒<span class="badge" id="cartBadge">0</span></button>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="float-food f1">🌶️</div><div class="float-food f2">🧀</div><div class="float-food f3">🍛</div>
+  <h1>
+    <span class="word"><span>Swaad</span></span>
+    <span class="word"><span>jo</span></span>
+    <span class="word"><span>Ghar</span></span>
+    <span class="word"><span>jaisa</span></span>
+    <span class="word"><span class="grad">ho.</span></span>
+  </h1>
+  <p>Gangaram Dairy se seedha order karo — bina kisi aggregator commission ke. Garma-garam shakahari khana, aapke darwaze tak. 🛵</p>
+  <div class="hero-actions">
+    <a class="btn-primary" href="#menu">🍽️ Menu Dekho</a>
+    <button class="btn-ghost" onclick="openCart()">🛒 Cart Dekho</button>
+  </div>
+</section>
+
+<!-- OFFERS -->
+<div class="offers" id="offers">
+  <div class="offer"><span class="ico">🎉</span> Direct Order = Commission Bachat</div>
+  <div class="offer"><span class="ico">🥛</span> Roz Fresh Bana</div>
+  <div class="offer"><span class="ico">🟢</span> 100% Vegetarian</div>
+  <div class="offer"><span class="ico">⚡</span> WhatsApp pe 1 Minute Mein</div>
+</div>
+
+<!-- MENU -->
+<div style="max-width:520px;margin:0 auto;padding:0 16px">
+  <div class="sec-title" id="menu"><h2>🍽️ Hamara Menu</h2><span class="link">Sab Shakahari 🟢</span></div>
+</div>
+<div class="chips" id="chips"></div>
+<div class="grid" id="grid"></div>
+
+<!-- REVIEWS -->
+<div class="sec-title" style="max-width:520px;margin:0 auto;padding:0 16px"><h2>💬 Kya Kehte Hain Customers</h2></div>
+<div class="reviews" id="reviews"></div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="flogo">🥛</div>
+  <h3>Gangaram Dairy</h3>
+  <p>Station Road, Gangaram Chowk, Begusarai, Bihar<br>🕗 8:00 AM – 10:00 PM · Saat din khula</p>
+  <div class="fbtns">
+    <button class="btn-primary" onclick="openCart()">🛒 Order Karein</button>
+    <a class="btn-ghost" href="https://wa.me/919999999999" target="_blank" style="background:var(--card);border:1.5px solid var(--line);padding:13px 20px;border-radius:14px;font-weight:700;font-size:14.5px">💬 WhatsApp</a>
+  </div>
+  <p style="margin-top:18px;font-size:11px">© 2026 Gangaram Dairy · Direct Order Platform</p>
+</footer>
+
+<!-- BOTTOM NAV -->
+<nav class="bnav">
+  <div class="bnav-in">
+    <button class="bnav-item active" onclick="scrollTo('#menu')"><span class="bi">🍽️</span>Menu</button>
+    <button class="bnav-item" onclick="scrollTo('#reviews')"><span class="bi">⭐</span>Reviews</button>
+    <button class="bnav-item" onclick="openCart()"><span class="bi">🛒</span>Cart</button>
+    <button class="bnav-item" onclick="scrollTo('footer')"><span class="bi">📞</span>Contact</button>
+  </div>
+</nav>
+
+<!-- CART DRAWER -->
+<div class="overlay" id="overlay" onclick="closeCart()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head"><h3>🛒 Aapka Cart</h3><button class="close-x" onclick="closeCart()">✕</button></div>
+  <div class="drawer-body" id="cartBody"></div>
+  <div class="drawer-foot" id="cartFoot">
+    <div class="total-row"><span>Item Total</span><b id="cartSubtotal">₹0</b></div>
+    <button class="checkout-btn" onclick="openCheckout()">Checkout →</button>
+  </div>
+</div>
+
+<!-- CHECKOUT MODAL -->
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h3>📍 Order Confirm Karein</h3>
+    <div class="field"><label>Naam</label><input id="coName" placeholder="Aapka naam"></div>
+    <div class="field"><label>Phone Number</label><input id="coPhone" type="tel" placeholder="10 digit mobile number"></div>
+    <div class="field"><label>Delivery Address</label><textarea id="coAddr" rows="2" placeholder="Pura address likhein"></textarea></div>
+    <div class="field"><label>Delivery Distance</label>
+      <div class="band-options" id="bands">
+        <div class="band-opt" data-km="1" onclick="pickBand(this)">0–1 km<small>₹20</small></div>
+        <div class="band-opt active" data-km="2" onclick="pickBand(this)">1–3 km<small>₹40</small></div>
+        <div class="band-opt" data-km="4" onclick="pickBand(this)">3–5 km<small>₹70</small></div>
+        <div class="band-opt" data-km="6" onclick="pickBand(this)">5+ km<small>₹100</small></div>
+      </div>
+    </div>
+    <div class="bill">
+      <div class="row"><span>Item Total</span><span id="billItems">₹0</span></div>
+      <div class="row"><span>Delivery Charge</span><span id="billDel">₹0</span></div>
+      <div class="row grand"><span>Grand Total</span><span id="billGrand">₹0</span></div>
+    </div>
+    <button class="wa-btn" onclick="sendWhatsApp()">💬 WhatsApp pe Order Bhejo</button>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div class="success" id="success">
+  <div>
+    <div class="check-wrap">
+      <svg viewBox="0 0 100 100">
+        <circle class="check-circle" cx="50" cy="50" r="44" fill="none" stroke="#16a34a" stroke-width="6" stroke-linecap="round"/>
+        <path class="check-mark" d="M30 52 L45 66 L72 38" fill="none" stroke="#16a34a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h2>Order Ho Gaya! 🎉</h2>
+    <p>Aapka order WhatsApp pe bhej diya gaya hai.<br>Gangaram Dairy jald hi aapko confirm karega.</p>
+    <div class="order-no" id="orderNo">#GD-0000</div><br>
+    <button class="btn-primary" onclick="closeSuccess()">Thik Hai 👍</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= DATA ================= */
+const RESTAURANT = {
+  name: "Gangaram Dairy",
+  phone: "919999999999", // demo number — owner dashboard se change hoga
+  hours: "8 AM – 10 PM"
+};
+
+const CATEGORIES = ["Starters","Main Course","Breads","Rice & Biryani","Sweets","Drinks"];
+
+const MENU = [
+  {id:1, cat:0, name:"Paneer Tikka", emoji:"🧀", price:220, bg:"bg-1", desc:"Charcoal tandoor mein bhuna, masaledar paneer", tag:"Chef Special"},
+  {id:2, cat:0, name:"Veg Spring Rolls", emoji:"🌯", price:150, bg:"bg-2", desc:"Crispy rolls, hari chutney ke saath", tag:""},
+  {id:3, cat:0, name:"Hara Bhara Kabab", emoji:"🥬", price:170, bg:"bg-3", desc:"Palak-matar ke healthy kabab", tag:"Healthy"},
+  {id:4, cat:0, name:"Dahi ke Kabab", emoji:"🍥", price:180, bg:"bg-4", desc:"Melt-in-mouth creamy kabab", tag:""},
+  {id:5, cat:1, name:"Paneer Butter Masala", emoji:"🍛", price:240, bg:"bg-1", desc:"Rich creamy gravy, makhni tadka", tag:"Bestseller"},
+  {id:6, cat:1, name:"Dal Makhani", emoji:"🫘", price:180, bg:"bg-2", desc:"Raati 24 ghante slow-cooked", tag:"Signature"},
+  {id:7, cat:1, name:"Chole Bhature", emoji:"🍽️", price:160, bg:"bg-3", desc:"Punjabi chole, fluffy bhature", tag:""},
+  {id:8, cat:1, name:"Masala Dosa", emoji:"🥞", price:140, bg:"bg-4", desc:"Crispy dosa, sambar-chutney", tag:""},
+  {id:9, cat:2, name:"Butter Naan", emoji:"🫓", price:40, bg:"bg-1", desc:"Tandoori naan, butter lagakar", tag:""},
+  {id:10, cat:2, name:"Tandoori Roti", emoji:"🫓", price:25, bg:"bg-2", desc:"Multigrain, garma-garam", tag:""},
+  {id:11, cat:2, name:"Garlic Naan", emoji:"🧄", price:55, bg:"bg-3", desc:"Lahsun tadka wala naan", tag:""},
+  {id:12, cat:3, name:"Veg Biryani", emoji:"🍚", price:210, bg:"bg-4", desc:"Basmati rice, kewda aroma, raita ke saath", tag:"Popular"},
+  {id:13, cat:3, name:"Jeera Rice", emoji:"🍚", price:120, bg:"bg-5", desc:"Bhuna jeera, ghee tadka", tag:""},
+  {id:14, cat:3, name:"Curd Rice", emoji:"🥣", price:110, bg:"bg-2", desc:"Thanda comfort food", tag:""},
+  {id:15, cat:4, name:"Gulab Jamun (2pc)", emoji:"🍮", price:80, bg:"bg-3", desc:"Garma-garam, shahi", tag:"Must Try"},
+  {id:16, cat:4, name:"Rasgulla (2pc)", emoji:"⚪", price:70, bg:"bg-5", desc:"Soft spongy, chasni wale", tag:""},
+  {id:17, cat:4, name:"Kheer", emoji:"🥛", price:90, bg:"bg-6", desc:"Chawal ki kheer, badam-kishmish", tag:""},
+  {id:18, cat:5, name:"Sweet Lassi", emoji:"🥤", price:90, bg:"bg-1", desc:"Malai maar ke, chhappan bhog", tag:"Refreshing"},
+  {id:19, cat:5, name:"Masala Chai", emoji:"☕", price:30, bg:"bg-3", desc:"Adrak-elaichi wali kulhad chai", tag:""},
+  {id:20, cat:5, name:"Fresh Lime Soda", emoji:"🍋", price:60, bg:"bg-4", desc:"Sweet ya salty — aapki pasand", tag:""}
+];
+
+const REVIEWS = [
+  {name:"Rahul Kumar", av:"R", stars:5, text:"Bhai, paneer butter masala ka swaad bilkul ghar jaisa hai! Aur WhatsApp order itna easy hai — 1 minute mein ho gaya."},
+  {name:"Priya Singh", av:"P", stars:5, text:"Har roz order karti hoon. Timing perfect, khana garma-garam aata hai. Commission bhi nahi lagta — full paisa vasool!"},
+  {name:"Amit Verma", av:"A", stars:4, text:"Gulab jamun ekdum soft the. Delivery charge pehle hi dikh jata hai, koi hidden charge nahi. Highly recommended."},
+  {name:"Sneha Gupta", av:"S", stars:5, text:"Chole bhature ka test bilkul Amritsar wala. Direct order se paise bhi bachte hain. Gangaram Dairy rocks! 🎉"}
+];
+
+/* ================= STATE ================= */
+let cart = {}; // id -> qty
+let activeCat = 0;
+let selBand = 2;
+let orderCount = 142;
+
+/* ================= HELPERS ================= */
+const $ = id => document.getElementById(id);
+const fmt = n => "₹" + n.toLocaleString("en-IN");
+function toast(msg){
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 1900);
+}
+function scrollTo(sel){
+  document.querySelector(sel)?.scrollIntoView({behavior:"smooth"});
+}
+
+/* ================= RENDER: MENU ================= */
+function renderChips(){
+  const c = $("chips");
+  c.innerHTML = CATEGORIES.map((cat,i)=>
+    `<button class="chip ${i===activeCat?'active':''}" onclick="setCat(${i})">${cat}</button>`
+  ).join("");
+}
+function setCat(i){
+  activeCat = i; renderChips(); renderGrid();
+  const chip = document.querySelectorAll(".chip")[i];
+  chip?.scrollIntoView({behavior:"smooth",inline:"center",block:"nearest"});
+}
+function renderGrid(){
+  const g = $("grid");
+  const items = MENU.filter(m=>m.cat===activeCat);
+  g.innerHTML = items.map((m,idx)=>`
+    <div class="card" data-i="${idx}" style="transition-delay:${idx*60}ms">
+      <div class="card-img ${m.bg}">
+        <span style="font-size:46px">${m.emoji}</span>
+        <span class="veg-badge"></span>
+        ${m.tag?`<span class="tag">🔥 ${m.tag}</span>`:""}
+      </div>
+      <div class="card-body">
+        <h3>${m.name}</h3>
+        <p class="desc">${m.desc}</p>
+        <div class="price-row">
+          <div class="price">${fmt(m.price)}<small> / plate</small></div>
+          <button class="add-btn" onclick="addToCart(${m.id}, this)">+</button>
+        </div>
+      </div>
+    </div>`).join("");
+  // reveal animation
+  requestAnimationFrame(()=>{
+    g.querySelectorAll(".card").forEach(c=>setTimeout(()=>c.classList.add("reveal"), +c.dataset.i*60));
+  });
+}
+
+/* ================= CART ================= */
+function cartCount(){ return Object.values(cart).reduce((a,b)=>a+b,0); }
+function cartTotal(){ return Object.entries(cart).reduce((s,[id,q])=>{const m=MENU.find(x=>x.id==id);return s+(m?m.price*q:0)},0); }
+
+function addToCart(id, btn){
+  cart[id] = (cart[id]||0) + 1;
+  updateCartUI();
+  // flying dot animation
+  if(btn){
+    const dot = document.createElement("div");
+    dot.style.cssText = `position:fixed;font-size:22px;z-index:99;pointer-events:none;transition:all .7s cubic-bezier(.3,.8,.3,1);left:${btn.getBoundingClientRect().left+10}px;top:${btn.getBoundingClientRect().top+10}px`;
+    dot.textContent = "🍛";
+    document.body.appendChild(dot);
+    const cb = document.querySelector(".cart-btn").getBoundingClientRect();
+    requestAnimationFrame(()=>{ dot.style.left = cb.left+10+"px"; dot.style.top = cb.top+8+"px"; dot.style.opacity = ".3"; dot.style.transform = "scale(.4)"; });
+    setTimeout(()=>dot.remove(),750);
+  }
+  toast("✅ " + MENU.find(m=>m.id===id).name + " cart mein add!");
+}
+function setQty(id, d){
+  cart[id] = (cart[id]||0) + d;
+  if(cart[id] <= 0) delete cart[id];
+  updateCartUI();
+}
+function updateCartUI(){
+  const n = cartCount();
+  const b = $("cartBadge");
+  b.textContent = n;
+  b.classList.toggle("show", n>0);
+  if(n>0){ b.style.animation="none"; void b.offsetWidth; b.style.animation=""; }
+  $("cartSubtotal").textContent = fmt(cartTotal());
+  renderCart();
+}
+function renderCart(){
+  const body = $("cartBody");
+  const entries = Object.entries(cart);
+  if(!entries.length){
+    body.innerHTML = `<div class="empty-cart"><div class="e">🛒</div><p>Cart khaali hai.<br>Kuch swaadish order karo! 😋</p></div>`;
+    $("cartFoot").classList.add("hidden");
+    return;
+  }
+  $("cartFoot").classList.remove("hidden");
+  body.innerHTML = entries.map(([id,q])=>{
+    const m = MENU.find(x=>x.id==id);
+    return `<div class="cart-item">
+      <div class="ci-emoji ${m.bg}">${m.emoji}</div>
+      <div class="ci-info"><b>${m.name}</b><div class="ci-price">${fmt(m.price)} × ${q} = <b>${fmt(m.price*q)}</b></div></div>
+      <div class="qty">
+        <button onclick="setQty(${id},-1)">−</button><span class="q">${q}</span><button onclick="setQty(${id},1)">+</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ================= DRAWER / MODAL ================= */
+function openCart(){ $("drawer").classList.add("show"); $("overlay").classList.add("show"); renderCart(); }
+function closeCart(){ $("drawer").classList.remove("show"); $("overlay").classList.remove("show"); }
+
+function openCheckout(){
+  if(!cartCount()){ toast("Pehle kuch add karo! 😄"); return; }
+  renderBill(); $("modal").classList.add("show"); $("overlay").classList.add("show");
+}
+function closeModal(){ $("modal").classList.remove("show"); if(!$("success").classList.contains("show")) $("overlay").classList.remove("show"); }
+
+function pickBand(el){
+  document.querySelectorAll(".band-opt").forEach(b=>b.classList.remove("active"));
+  el.classList.add("active"); selBand = +el.dataset.km; renderBill();
+}
+function bandCharge(km){
+  if(km<=1) return 20; if(km<=3) return 40; if(km<=5) return 70; return 100;
+}
+function renderBill(){
+  const del = bandCharge(selBand), items = cartTotal();
+  $("billItems").textContent = fmt(items);
+  $("billDel").textContent = fmt(del);
+  $("billGrand").textContent = fmt(items+del);
+}
+
+/* ================= WHATSAPP ================= */
+function sendWhatsApp(){
+  const name = $("coName").value.trim();
+  const phone = $("coPhone").value.trim();
+  const addr = $("coAddr").value.trim();
+  if(!name || !phone || phone.length<10){ toast("Naam aur phone number sahi bharein!"); return; }
+  if(!addr){ toast("Delivery address likhein!"); return; }
+  if(cartCount()<1){ toast("Cart khaali hai!"); return; }
+
+  orderCount++;
+  const orderNo = "#GD-" + (1000 + orderCount);
+  const del = bandCharge(selBand), items = cartTotal();
+  const lines = Object.entries(cart).map(([id,q])=>{
+    const m = MENU.find(x=>x.id==id);
+    return `• ${m.name} × ${q} = ${fmt(m.price*q)}`;
+  });
+
+  const msg =
+`🍽️ *NEW ORDER — ${orderNo}*
+━━━━━━━━━━━━━
+👤 *Naam:* ${name}
+📞 *Phone:* ${phone}
+📍 *Address:* ${addr}
+━━━━━━━━━━━━━
+${lines.join("\n")}
+━━━━━━━━━━━━━
+🧾 *Item Total:* ${fmt(items)}
+🛵 *Delivery:* ${fmt(del)}
+💵 *Grand Total:* ${fmt(items+del)}
+━━━━━━━━━━━━━
+🕐 Order time: ${new Date().toLocaleTimeString("hi-IN")}
+— Sent via Gangaram Dairy Direct Order`;
+
+  const url = "https://wa.me/" + RESTAURANT.phone + "?text=" + encodeURIComponent(msg);
+  // show success
+  $("orderNo").textContent = orderNo;
+  $("modal").classList.remove("show");
+  $("success").classList.add("show");
+  $("overlay").classList.remove("show");
+  cart = {}; updateCartUI();
+  // open whatsapp after short delay
+  setTimeout(()=>window.open(url,"_blank"), 900);
+}
+function closeSuccess(){ $("success").classList.remove("show"); }
+
+/* ================= REVIEWS ================= */
+function renderReviews(){
+  $("reviews").innerHTML = REVIEWS.map(r=>`
+    <div class="review">
+      <div class="stars">${"★".repeat(r.stars)}${"☆".repeat(5-r.stars)}</div>
+      <p>"${r.text}"</p>
+      <div class="who"><div class="av">${r.av}</div><div><b>${r.name}</b><br><span>Verified Order ✅</span></div></div>
+    </div>`).join("");
+}
+
+/* ================= SCROLL REVEAL ================= */
+const io = new IntersectionObserver(es=>{
+  es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); } });
+},{threshold:.12});
+
+/* ================= INIT ================= */
+(function init(){
+  renderChips(); renderGrid(); renderReviews(); updateCartUI();
+  document.querySelectorAll(".rv").forEach(el=>io.observe(el));
+  // footer + offers reveal
+  document.querySelectorAll("footer, .offers, .reviews, .sec-title").forEach(el=>{
+    el.classList.add("rv"); io.observe(el);
+  });
+  // open/closed demo logic — 8 AM to 10 PM
+  const h = new Date().getHours();
+  const open = h >= 8 && h < 22;
+  if(!open){
+    $("openPill").classList.add("closed");
+    $("openText").textContent = "Closed";
+  }
+})();
+</script>
+</body>
+</html>
