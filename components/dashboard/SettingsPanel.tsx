@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { onSettings } from "@/lib/data";
 import { Settings } from "@/lib/types";
 import { useEffect } from "react";
+import { uploadToCloudinary } from "@/lib/upload";
 
 export default function SettingsPanel() {
   const { user } = useAuth();
@@ -29,18 +30,8 @@ export default function SettingsPanel() {
   async function uploadBanner(file: File) {
     setBannerUploading(true);
     try {
-      const token = await user?.getIdToken();
-      const sigRes = await fetch("/api/upload/sign", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
-      const sig = await sigRes.json();
-      const form = new FormData();
-      form.append("file", file);
-      form.append("api_key", sig.apiKey);
-      form.append("timestamp", String(sig.timestamp));
-      form.append("signature", sig.signature);
-      const up = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`, { method: "POST", body: form });
-      const data = await up.json();
-      if (!data.secure_url) throw new Error("Upload fail");
-      await save({ banner: data.secure_url });
+      const url = await uploadToCloudinary(file, await user?.getIdToken());
+      await save({ banner: url });
     } catch (e: any) {
       alert("Banner upload fail: " + e.message);
     } finally {

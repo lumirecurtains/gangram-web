@@ -9,6 +9,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { onCategories, onMenuItems } from "@/lib/data";
 import { Category, MenuItem } from "@/lib/types";
+import { uploadToCloudinary } from "@/lib/upload";
 
 export default function MenuManager() {
   const { user } = useAuth();
@@ -113,29 +114,19 @@ export default function MenuManager() {
     }
   }
 
-  // 📷 Direct photo upload — Cloudinary (signed, secure)
+  // 📷 Direct photo upload — compress karke Cloudinary (slow net pe bhi fast)
   async function uploadPhoto(file: File) {
     setUploading(true);
     try {
-      const token = await user?.getIdToken();
-      const sigRes = await fetch("/api/upload/sign", {
-        method: "POST", headers: { Authorization: `Bearer ${token}` },
+      const url = await uploadToCloudinary(file, await user?.getIdToken(), (s) => {
+        // s = "compressing" | "uploading" — label update kar sakte hain
+        setUploading(true);
       });
-      const sig = await sigRes.json();
-      if (!sig.ok) throw new Error(sig.error || "Signature fail");
-      const form = new FormData();
-      form.append("file", file);
-      form.append("api_key", sig.apiKey);
-      form.append("timestamp", String(sig.timestamp));
-      form.append("signature", sig.signature);
-      const up = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`, { method: "POST", body: form });
-      const data = await up.json();
-      if (!data.secure_url) throw new Error("Upload fail");
-      setPhoto(data.secure_url);
+      setPhoto(url);
       setPhotoUrl("");
       notify("ok", "📷 Photo upload ho gayi!");
     } catch (e: any) {
-      notify("err", "📷 Photo upload fail: " + e.message);
+      notify("err", "📷 Photo upload fail: " + (e?.message || e));
     } finally {
       setUploading(false);
     }
