@@ -22,24 +22,21 @@ export default function HomePage() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
-  const [activeCat, setActiveCat] = useState<string>("");
+  const [activeCat, setActiveCat] = useState<string>("all");
   const [query, setQuery] = useState("");
 
   useEffect(() => {
     const unsubs = [
       onSettings(setSettings),
-      onCategories((cats) => {
-        setCategories(cats);
-        if (!activeCat && cats.length) setActiveCat(cats[0].id);
-      }),
+      onCategories(setCategories),
       onMenuItems(setItems),
     ];
     return () => unsubs.forEach((u) => u());
-  }, [activeCat]);
+  }, []);
 
   // Category + search dono filter
   const visible = items.filter((m) => {
-    const catOk = !activeCat || m.categoryId === activeCat;
+    const catOk = activeCat === "all" || !activeCat || m.categoryId === activeCat;
     const q = query.trim().toLowerCase();
     const searchOk = !q || m.name.toLowerCase().includes(q) || (m.desc || "").toLowerCase().includes(q);
     return catOk && searchOk;
