@@ -1,6 +1,7 @@
 "use client";
 
 // 🔐 Auth — owner login (Firebase email/password) + owner check
+// HARDENED: settings load na ho toh bhi 8s mein fallback — kabhi "Loading" stuck nahi
 
 import { createContext, useContext, useEffect, useState } from "react";
 import {
@@ -17,6 +18,7 @@ interface AuthCtx {
   user: User | null;
   isOwner: boolean;
   loading: boolean;
+  settingsReady: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -30,14 +32,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (u) => setUser(u));
-    const unsubSettings = onSettings((s: Settings) => {
-      const emails = (s.ownerEmails || []).map((e) => e.toLowerCase());
-      setIsOwner(!!user && emails.includes((user.email || "").toLowerCase()));
-      setLoading(false);
-    });
+    const unsubSettings = onSettings(
+      (s: Settings) => {
+        const emails = (s.ownerEmails || []).map((e) => e.toLowerCase());
+        setIsOwner(!!user && emails.includes((user.email || "").toLowerCase()));
+        setLoading(false);
+      },
+      () => setLoading(false) // Firestore error → bhi login screen dikhao
+    );
+    // Fallback timer — Firestore slow/offline ho toh bhi 8s mein atka mat
+    const t = setTimeout(() => setLoading(false), 8000);
     return () => {
       unsubAuth();
       unsubSettings();
+      clearTimeout(t);
     };
   }, [user]);
 
@@ -50,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <Ctx.Provider value={{ user, isOwner, loading, signIn, logout }}>
+    <Ctx.Provider value={{ user, isOwner, loading, settingsReady: !loading, signIn, logout }}>
       {children}
     </Ctx.Provider>
   );

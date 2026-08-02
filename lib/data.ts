@@ -25,10 +25,17 @@ const DEFAULT_SETTINGS: Settings = {
   ],
 };
 
-export function onSettings(cb: (s: Settings) => void): Unsubscribe {
-  return onSnapshot(doc(db, "settings", "main"), (snap) => {
-    cb(snap.exists() ? (snap.data() as Settings) : DEFAULT_SETTINGS);
-  });
+export function onSettings(cb: (s: Settings) => void, onErr?: () => void): Unsubscribe {
+  return onSnapshot(
+    doc(db, "settings", "main"),
+    (snap) => cb(snap.exists() ? (snap.data() as Settings) : DEFAULT_SETTINGS),
+    (err) => {
+      console.error("settings load error:", err?.message);
+      onErr?.();
+      // fallback: default settings se bhi chalao (offline resilience)
+      cb(DEFAULT_SETTINGS);
+    }
+  );
 }
 
 export function onCategories(cb: (c: Category[]) => void): Unsubscribe {
