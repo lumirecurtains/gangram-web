@@ -214,3 +214,10 @@ footer.foot{margin-top:30px;background:var(--ink);color:#e7e5e4;padding:34px 16p
 @media(max-width:420px){
   .dash-grid{grid-template-columns:1fr}
 }
+
+/* ---------- search bar ---------- */
+.search-wrap{position:relative;max-width:520px;margin:0 auto}
+.search-ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:15px;opacity:.6}
+.search-input{width:100%;padding:13px 42px 13px 40px;border-radius:15px;border:1.5px solid var(--line);background:var(--card);font-size:14px;font-family:inherit;outline:none;transition:border .2s,box-shadow .2s}
+.search-input:focus{border-color:var(--saffron);box-shadow:0 0 0 3px rgba(245,158,11,.15)}
+.search-clear{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:50%;background:#f5efe2;font-size:11px;display:grid;place-items:center;font-weight:800}
