@@ -1,60 +1,96 @@
-"use client";
+// 🍲 Dynamic Product SEO & Product Page Route — /product/[id] (Sprint A2 Tasks 2 & 3)
 
-// 🍲 Standalone Product Detail Page Route — /product/[id] (Task 1)
-
-import { useState, useEffect, use } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { CartProvider } from "@/contexts/CartContext";
+import { Metadata } from "next";
+import { adminDb } from "@/lib/firebaseAdmin";
+import { SITE_URL, getProductJsonLd } from "@/lib/seo";
+import ProductDetailClient from "./ProductDetailClient";
 import { MenuItem } from "@/lib/types";
-import { onMenuItems } from "@/lib/data";
-import ProductDetailModal from "@/components/ProductDetailModal";
 
-export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const router = useRouter();
-  const [items, setItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsub = onMenuItems((data) => {
-      setItems(data);
-      setLoading(false);
-    });
-    return () => unsub();
-  }, []);
-
-  const product = items.find((it) => it.id === resolvedParams.id) || null;
-
-  if (loading) {
-    return <div style={{ padding: 40, textAlign: "center", color: "#78716c" }}>Loading product details…</div>;
+async function getProductData(id: string): Promise<MenuItem | null> {
+  try {
+    const snap = await adminDb.collection("menuItems").doc(id).get();
+    if (snap.exists) {
+      return { id: snap.id, ...snap.data() } as MenuItem;
+    }
+  } catch (err) {
+    console.warn("Product fetch server error:", err);
   }
+  return null;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const resolvedParams = await params;
+  const product = await getProductData(resolvedParams.id);
 
   if (!product) {
-    return (
-      <div style={{ padding: 40, textAlign: "center" }}>
-        <h2>🍽️ Dish nahi mila</h2>
-        <p style={{ color: "#78716c", marginTop: 8 }}>Ye product menu mein nahi mil raha hai.</p>
-        <Link href="/" className="btn-primary" style={{ display: "inline-block", marginTop: 14 }}>
-          ← Menu Par Wapas Jao
-        </Link>
-      </div>
-    );
+    return {
+      title: "Dish Not Found | Gangaram Dairy Begusarai",
+      description: "Swaadish khana aur dairy products online order karein Gangaram Dairy Begusarai se.",
+    };
   }
 
-  return (
-    <CartProvider>
-      <div style={{ minHeight: "100vh", background: "#fffaf0", padding: "20px 16px" }}>
-        <Link href="/" style={{ fontSize: 13, fontWeight: 700, color: "#d97706", display: "inline-block", marginBottom: 14 }}>
-          ← Back to Menu
-        </Link>
+  const title = `${product.name} - ₹${product.price} | Gangaram Dairy Begusarai`;
+  const description = `${product.name} (${product.desc || "Taaza ghar ka swaad"}). Order online for fast delivery in Begusarai, Bihar. Rating: ⭐ ${product.avgRating || 4.8}/5.`;
+  const image = product.photo || `${SITE_URL}/og-image.jpg`;
 
-        <ProductDetailModal
-          product={product}
-          onClose={() => router.push("/")}
-          onSelectProduct={(p) => router.push(`/product/${p.id}`)}
+  return {
+    title,
+    description,
+    keywords: [
+      product.name,
+      `${product.name} Begusarai`,
+      "Gangaram Dairy Begusarai",
+      "Begusarai Food Delivery",
+      "Online Dairy Begusarai",
+    ],
+    alternates: {
+      canonical: `${SITE_URL}/product/${product.id}`,
+    },
+    openGraph: {
+      title,
+      description,
+      url: `${SITE_URL}/product/${product.id}`,
+      siteName: "Gangaram Dairy Begusarai",
+      locale: "hi_IN",
+      type: "article",
+      images: [
+        {
+          url: image,
+          alt: `${product.name} - Gangaram Dairy Begusarai`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+  };
+}
+
+export default async function ProductDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const resolvedParams = await params;
+  const product = await getProductData(resolvedParams.id);
+  const jsonLd = product ? getProductJsonLd(product) : null;
+
+  return (
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-      </div>
-    </CartProvider>
+      )}
+      <ProductDetailClient id={resolvedParams.id} initialProduct={product} />
+    </>
   );
 }

@@ -50,6 +50,12 @@ export interface MenuItem {
   tag: string;        // "Bestseller", "Chef Special"...
   available: boolean;
   order: number;
+  // Sprint A1 Product Intelligence & Badges
+  views?: number;
+  ordersCount?: number;
+  reviewCount?: number;
+  avgRating?: number;
+  ownersChoice?: boolean;
 }
 
 export interface CartLine {
@@ -81,10 +87,12 @@ export interface Order {
 
 export interface Review {
   id: string;
+  productId?: string;
   name: string;
   phone: string;
   rating: number; // 1-5
   text: string;
   hidden: boolean;
   createdAt: number;
+  updatedAt?: number;
 }

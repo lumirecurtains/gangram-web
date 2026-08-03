@@ -13,6 +13,7 @@ import RevenuePanel from "@/components/dashboard/RevenuePanel";
 import ReviewsPanel from "@/components/dashboard/ReviewsPanel";
 import SettingsPanel from "@/components/dashboard/SettingsPanel";
 import CustomersPanel from "@/components/dashboard/CustomersPanel";
+import BusinessOverview from "@/components/dashboard/BusinessOverview";
 
 function LoginScreen() {
   const { signIn, loading } = useAuth();
@@ -52,7 +53,7 @@ function LoginScreen() {
 
 function DashboardShell() {
   const { user, isOwner, loading, logout } = useAuth();
-  const [tab, setTab] = useState("menu");
+  const [tab, setTab] = useState("overview");
 
   if (loading) return <div className="dash" style={{ padding: 40, textAlign: "center" }}>Loading…</div>;
   if (!user) return <LoginScreen />;
@@ -68,16 +69,22 @@ function DashboardShell() {
   }
 
   const TABS = [
-    ["menu", "🍽️ Menu"], ["cats", "🏷️ Categories"], ["orders", "📦 Orders"],
-    ["customers", "👥 Customers"], ["rev", "💰 Revenue"], ["reviews", "⭐ Reviews"], ["settings", "⚙️ Settings"],
+    ["overview", "📊 Overview"],
+    ["menu", "🍽️ Menu"],
+    ["cats", "🏷️ Categories"],
+    ["orders", "📦 Orders"],
+    ["customers", "👥 Customers"],
+    ["rev", "💰 Revenue"],
+    ["reviews", "⭐ Reviews"],
+    ["settings", "⚙️ Settings"],
   ];
 
   return (
     <div className="dash">
       <header className="dash-head">
         <div>
-          <b style={{ fontSize: 18 }}>🧑‍🍳 Dashboard</b>
-          <div style={{ fontSize: 12, color: "#78716c" }}>{user.email} · Owner</div>
+          <b style={{ fontSize: 18 }}>🧑‍🍳 Business Intelligence Dashboard</b>
+          <div style={{ fontSize: 12, color: "#78716c" }}>{user.email} · Gangaram Dairy Owner</div>
         </div>
         <button className="btn-ghost" style={{ padding: "8px 14px", fontSize: 12.5 }} onClick={logout}>Logout</button>
       </header>
@@ -91,6 +98,7 @@ function DashboardShell() {
       </div>
 
       <div className="dash-body">
+        {tab === "overview" && <BusinessOverview onNavigateTab={(t) => setTab(t)} />}
         {tab === "menu" && <MenuManager />}
         {tab === "cats" && <CategoryManager />}
         {tab === "orders" && <OrdersPanel />}

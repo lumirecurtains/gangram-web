@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MenuItem } from "@/lib/types";
 import { useCart } from "@/contexts/CartContext";
 import ProductDetailModal from "@/components/ProductDetailModal";
+import { getProductBadges } from "@/lib/badges";
 
 const GRADS = ["bg-1", "bg-2", "bg-3", "bg-4", "bg-5", "bg-6"];
 
@@ -39,6 +40,7 @@ export default function MenuGrid({ items }: { items: MenuItem[] }) {
               key={m.id}
               m={m}
               i={i}
+              allItems={items}
               add={add}
               onClickProduct={(prod) => setSelectedProduct(prod)}
             />
@@ -58,15 +60,18 @@ export default function MenuGrid({ items }: { items: MenuItem[] }) {
 function MenuCard({
   m,
   i,
+  allItems,
   add,
   onClickProduct,
 }: {
   m: MenuItem;
   i: number;
+  allItems: MenuItem[];
   add: (m: MenuItem) => void;
   onClickProduct: (m: MenuItem) => void;
 }) {
   const [loaded, setLoaded] = useState(false);
+  const activeBadges = getProductBadges(m, allItems).slice(0, 2);
 
   return (
     <motion.div
@@ -114,20 +119,35 @@ function MenuCard({
         <span className="veg-overlay">
           <span className="veg-badge"></span>
         </span>
-        {m.tag ? (
-          <motion.span
-            className="tag"
-            initial={{ scale: 0.8 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring" }}
-          >
-            🔥 {m.tag}
-          </motion.span>
-        ) : null}
+
+        {/* Task 2 & Task 6: Smart Badges (Max TWO badges on card) */}
+        <div style={{ position: "absolute", bottom: 10, right: 10, display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end", zIndex: 4 }}>
+          {activeBadges.map((badge, bIdx) => (
+            <motion.span
+              key={bIdx}
+              className="tag"
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring" }}
+              style={badge.includes("Owner") ? { background: "linear-gradient(135deg, #ef4444, #dc2626)", color: "#fff" } : {}}
+            >
+              {badge}
+            </motion.span>
+          ))}
+          {!activeBadges.length && m.tag && (
+            <span className="tag">🔥 {m.tag}</span>
+          )}
+        </div>
+
         {!m.available && <span className="tag sold">Sold Out</span>}
       </div>
       <div className="card-body">
-        <h3>{m.name}</h3>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h3>{m.name}</h3>
+          <span style={{ fontSize: 11.5, color: "#f59e0b", fontWeight: 800 }}>
+            ⭐ {m.avgRating ? m.avgRating.toFixed(1) : "4.8"} ({m.reviewCount || 12})
+          </span>
+        </div>
         <p className="desc">{m.desc}</p>
         <div className="price-row">
           <div className="price">

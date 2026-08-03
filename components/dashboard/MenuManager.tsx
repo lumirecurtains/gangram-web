@@ -11,6 +11,7 @@ import { useAuth } from "@/lib/auth";
 import { onCategories, onMenuItems } from "@/lib/data";
 import { Category, MenuItem } from "@/lib/types";
 import { uploadToCloudinary } from "@/lib/upload";
+import { getProductBadges } from "@/lib/badges";
 
 export default function MenuManager() {
   const { user } = useAuth();
@@ -40,6 +41,16 @@ export default function MenuManager() {
   function notify(type: "ok" | "err", text: string) {
     setMsg({ type, text });
     setTimeout(() => setMsg(null), 3000);
+  }
+
+  async function toggleOwnersChoice(m: MenuItem) {
+    try {
+      const nextState = !m.ownersChoice;
+      await updateDoc(doc(db, "menuItems", m.id), { ownersChoice: nextState });
+      notify("ok", nextState ? "❤️ Owner's Choice badge enable ho gaya!" : "Owner's Choice badge remove ho gaya.");
+    } catch (e: any) {
+      notify("err", "Toggle fail: " + e.message);
+    }
   }
 
   function openAddForm() {
@@ -101,17 +112,17 @@ export default function MenuManager() {
     try {
       await updateDoc(doc(db, "menuItems", m.id), { available: !m.available });
     } catch (e: any) {
-      notify("err", "❌ " + (e?.message || e));
+      notify("err", "Status change fail");
     }
   }
 
   async function remove(m: MenuItem) {
-    if (!confirm(`"${m.name}" delete karein?`)) return;
+    if (!confirm(`Kya aap "${m.name}" ko hatana chahte hain?`)) return;
     try {
       await deleteDoc(doc(db, "menuItems", m.id));
-      notify("ok", "🗑️ Dish delete ho gaya");
+      notify("ok", "🗑️ Dish delete ho gaya!");
     } catch (e: any) {
-      notify("err", "❌ " + (e?.message || e));
+      notify("err", "Delete fail: " + (e?.message || e));
     }
   }
 
@@ -303,32 +314,73 @@ export default function MenuManager() {
       </AnimatePresence>
 
       <div>
-        {items.map((m) => (
-          <motion.div
-            layout
-            key={m.id}
-            className="dash-row"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div className="dash-emoji">{m.photo ? <img src={m.photo} alt="" /> : m.emoji}</div>
-            <div style={{ flex: 1 }}>
-              <b style={{ fontSize: 13.5 }}>{m.name}</b>
-              <div style={{ fontSize: 12, color: "#78716c" }}>
-                ₹{m.price} · {cats.find((c) => c.id === m.categoryId)?.name || "—"}{m.tag ? ` · ${m.tag}` : ""}
-              </div>
-            </div>
-            <button
-              className="dash-mini"
-              style={{ background: m.available ? "#dcfce7" : "#fee2e2", color: m.available ? "#16a34a" : "#dc2626" }}
-              onClick={() => toggleAvailable(m)}
+        {items.map((m) => {
+          const activeBadges = getProductBadges(m, items);
+          return (
+            <motion.div
+              layout
+              key={m.id}
+              className="dash-row"
+              style={{ flexWrap: "wrap", gap: 10, padding: "12px 14px" }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
             >
-              {m.available ? "Open" : "Sold"}
-            </button>
-            <button className="dash-mini" onClick={() => startEdit(m)}>✏️</button>
-            <button className="dash-mini" style={{ color: "#dc2626" }} onClick={() => remove(m)}>🗑️</button>
-          </motion.div>
-        ))}
+              <div className="dash-emoji">{m.photo ? <img src={m.photo} alt="" /> : m.emoji}</div>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <b style={{ fontSize: 14 }}>{m.name}</b>
+                  {m.ownersChoice && (
+                    <span style={{ fontSize: 11, background: "#fee2e2", color: "#dc2626", padding: "2px 6px", borderRadius: 6, fontWeight: 700 }}>
+                      ❤️ Owner's Choice
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 12, color: "#78716c", marginTop: 2 }}>
+                  ₹{m.price} · {cats.find((c) => c.id === m.categoryId)?.name || "—"}{m.tag ? ` · ${m.tag}` : ""}
+                </div>
+
+                {/* Task 4 & Task 5: Product Intelligence Metrics & Active Badges */}
+                <div style={{ display: "flex", gap: 12, fontSize: 11.5, color: "#a8a29e", marginTop: 4, flexWrap: "wrap" }}>
+                  <span>👀 <b>{m.views || 0}</b> views</span>
+                  <span>📦 <b>{m.ordersCount || 0}</b> orders</span>
+                  <span>⭐ <b>{m.avgRating ? m.avgRating.toFixed(1) : "4.8"}</b> ({m.reviewCount || 0} reviews)</span>
+                </div>
+
+                {activeBadges.length > 0 && (
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
+                    {activeBadges.map((b, idx) => (
+                      <span key={idx} style={{ fontSize: 10, background: "#fef3c7", color: "#92400e", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
+                        {b}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Controls: Owner's Choice Toggle + Open/Sold + Edit + Delete */}
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <button
+                  type="button"
+                  className="dash-mini"
+                  style={{ background: m.ownersChoice ? "#fee2e2" : "#f3f4f6", color: m.ownersChoice ? "#dc2626" : "#4b5563", fontSize: 11.5, padding: "6px 10px" }}
+                  onClick={() => toggleOwnersChoice(m)}
+                  title="Toggle Owner's Choice Badge"
+                >
+                  {m.ownersChoice ? "❤️ Choice" : "+ Choice"}
+                </button>
+                <button
+                  className="dash-mini"
+                  style={{ background: m.available ? "#dcfce7" : "#fee2e2", color: m.available ? "#16a34a" : "#dc2626" }}
+                  onClick={() => toggleAvailable(m)}
+                >
+                  {m.available ? "Open" : "Sold"}
+                </button>
+                <button className="dash-mini" onClick={() => startEdit(m)}>✏️</button>
+                <button className="dash-mini" style={{ color: "#dc2626" }} onClick={() => remove(m)}>🗑️</button>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
       {!items.length && <p style={{ color: "#a8a29e", fontSize: 13, marginTop: 12 }}>Abhi koi dish nahi — "Add Dish" se shuru karo!</p>}
     </div>

@@ -1,15 +1,22 @@
 "use client";
 
-// 🍲 Product Detail Modal & View Component (Task 1)
-// Large image, product name, desc, price, rating display, customer reviews, quantity selector, add to cart, related products
+// 🍲 Product Detail Modal & Product Review Component (Sprint A1 Tasks 1, 2, 3)
+// Features:
+// 1. Automatic View Count Tracking (incrementProductViews)
+// 2. All Smart Badges Display
+// 3. Average Rating & Total Reviews
+// 4. Rating Distribution (5★ - 1★)
+// 5. Customer Reviews List
+// 6. Write & Edit Review Form (1-5 star selector, customer name/phone, write & update)
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MenuItem, Review } from "@/lib/types";
 import { useCart } from "@/contexts/CartContext";
 import { onMenuItems } from "@/lib/data";
-import { collection, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { getProductBadges, incrementProductViews } from "@/lib/badges";
+import { collection, onSnapshot, doc, setDoc, updateDoc } from "firebase/firestore";
+import { db, auth } from "@/lib/firebase";
 
 export default function ProductDetailModal({
   product,
@@ -25,38 +32,140 @@ export default function ProductDetailModal({
   const [allItems, setAllItems] = useState<MenuItem[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
 
+  // Review form state
+  const [userRating, setUserRating] = useState(5);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewerName, setReviewerName] = useState("");
+  const [reviewerPhone, setReviewerPhone] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [existingReviewId, setExistingReviewId] = useState<string | null>(null);
+
+  // Auto increment view count on mount (Task 3 & 5)
+  useEffect(() => {
+    if (product?.id) {
+      incrementProductViews(product.id);
+    }
+  }, [product?.id]);
+
   useEffect(() => {
     setQty(1);
+    setShowReviewForm(false);
   }, [product]);
 
   useEffect(() => {
     const unsub1 = onMenuItems(setAllItems);
-    const unsub2 = onSnapshot(collection(db, "reviews"), (snap) => {
-      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Review);
-      setReviews(list.filter((r) => !r.hidden));
-    }, () => setReviews([]));
+    const unsub2 = onSnapshot(
+      collection(db, "reviews"),
+      (snap) => {
+        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Review);
+        setReviews(list.filter((r) => !r.hidden));
+      },
+      () => setReviews([])
+    );
 
-    return () => { unsub1(); unsub2(); };
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, []);
 
   if (!product) return null;
 
-  // Calculate average rating or fallback
-  const avgRating = reviews.length
-    ? (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1)
-    : "4.8";
+  // Filter reviews for this specific product
+  const productReviews = reviews.filter((r) => !r.productId || r.productId === product.id);
+
+  // Calculate Average Rating & Distribution
+  const totalRev = productReviews.length;
+  const avgRating = totalRev
+    ? (productReviews.reduce((acc, r) => acc + (r.rating || 5), 0) / totalRev).toFixed(1)
+    : (product.avgRating ? product.avgRating.toFixed(1) : "4.8");
+
+  const distribution = [5, 4, 3, 2, 1].map((stars) => {
+    const count = productReviews.filter((r) => (r.rating || 5) === stars).length;
+    const pct = totalRev ? Math.round((count / totalRev) * 100) : stars === 5 ? 85 : 5;
+    return { stars, count, pct };
+  });
+
+  // Smart Badges for this product
+  const allBadges = getProductBadges(product, allItems);
+
+  // Check if current user/phone has already reviewed
+  function prepareReviewForm() {
+    const phoneToMatch = auth.currentUser?.phoneNumber?.replace("+91", "") || reviewerPhone;
+    const existing = productReviews.find(
+      (r) => r.productId === product?.id && (phoneToMatch && r.phone?.includes(phoneToMatch))
+    );
+
+    if (existing) {
+      setExistingReviewId(existing.id);
+      setUserRating(existing.rating || 5);
+      setReviewText(existing.text || "");
+      setReviewerName(existing.name || "");
+      setReviewerPhone(existing.phone || "");
+    } else {
+      setExistingReviewId(null);
+      setUserRating(5);
+      setReviewText("");
+    }
+    setShowReviewForm(true);
+  }
+
+  // Save / Update Review Action
+  async function handleSubmitReview(e: React.FormEvent) {
+    e.preventDefault();
+    if (!product) return;
+    if (!reviewerName.trim() || !reviewerPhone.trim()) {
+      alert("Naam aur Mobile Number bharo!");
+      return;
+    }
+    setSubmittingReview(true);
+    try {
+      const reviewId = existingReviewId || `rev_${product.id}_${Date.now()}`;
+      const payload = {
+        productId: product.id,
+        name: reviewerName.trim(),
+        phone: reviewerPhone.trim(),
+        rating: userRating,
+        text: reviewText.trim(),
+        hidden: false,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      await setDoc(doc(db, "reviews", reviewId), payload, { merge: true });
+
+      // Recalculate and update product avg rating & review count
+      const updatedList = [...productReviews.filter((r) => r.id !== reviewId), payload as any];
+      const newAvg = Number(
+        (updatedList.reduce((acc, r) => acc + (r.rating || 5), 0) / updatedList.length).toFixed(1)
+      );
+
+      await updateDoc(doc(db, "menuItems", product.id), {
+        avgRating: newAvg,
+        reviewCount: updatedList.length,
+      }).catch(() => {});
+
+      alert(existingReviewId ? "✅ Review update ho gaya!" : "✅ Swaadish Review submit ho gaya!");
+      setShowReviewForm(false);
+    } catch (err: any) {
+      alert("Review submit error: " + (err?.message || err));
+    } finally {
+      setSubmittingReview(false);
+    }
+  }
 
   // Related products from same category
-  const related = allItems.filter(
-    (item) => item.categoryId === product.categoryId && item.id !== product.id
-  ).slice(0, 4);
+  const related = allItems
+    .filter((item) => item.categoryId === product.categoryId && item.id !== product.id)
+    .slice(0, 4);
 
   return (
     <AnimatePresence>
       <div className="overlay show" style={{ opacity: 1, pointerEvents: "auto" }} onClick={onClose}>
         <motion.div
           className="modal-box"
-          style={{ maxWidth: 480, padding: 0, overflow: "hidden", borderRadius: 24 }}
+          style={{ maxWidth: 490, padding: 0, overflow: "hidden", borderRadius: 24 }}
           initial={{ opacity: 0, y: 30, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 30, scale: 0.95 }}
@@ -88,7 +197,7 @@ export default function ProductDetailModal({
           </button>
 
           {/* Large Image Header */}
-          <div className="card-img has-photo" style={{ height: 220, borderRadius: 0 }}>
+          <div className="card-img has-photo" style={{ height: 230, borderRadius: 0 }}>
             {product.photo ? (
               <img
                 src={product.photo}
@@ -102,16 +211,39 @@ export default function ProductDetailModal({
             <span className="veg-overlay" style={{ top: 14, left: 14 }}>
               <span className="veg-badge" />
             </span>
-            {product.tag ? <span className="tag" style={{ bottom: 14, right: 14 }}>🔥 {product.tag}</span> : null}
           </div>
 
           {/* Content Body */}
-          <div style={{ padding: "18px 20px 24px", maxHeight: "60vh", overflowY: "auto" }}>
+          <div style={{ padding: "18px 20px 24px", maxHeight: "62vh", overflowY: "auto" }}>
+            
+            {/* Task 2: All Active Badges Bar */}
+            {allBadges.length > 0 && (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                {allBadges.map((b, idx) => (
+                  <span
+                    key={idx}
+                    className="tag"
+                    style={{
+                      background: b.includes("Owner")
+                        ? "linear-gradient(135deg, #ef4444, #dc2626)"
+                        : "linear-gradient(135deg, #fef3c7, #fde68a)",
+                      color: b.includes("Owner") ? "#fff" : "#92400e",
+                      padding: "4px 10px",
+                      fontSize: 11.5,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {b}
+                  </span>
+                ))}
+              </div>
+            )}
+
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
                 <h2 style={{ fontSize: 20, fontWeight: 900, color: "#1c1917" }}>{product.name}</h2>
-                <div style={{ fontSize: 13, color: "#f59e0b", fontWeight: 700, marginTop: 2 }}>
-                  ⭐ {avgRating} / 5.0 ({reviews.length || 12} reviews)
+                <div style={{ fontSize: 13, color: "#f59e0b", fontWeight: 800, marginTop: 2 }}>
+                  ⭐ {avgRating} / 5.0 ({totalRev || product.reviewCount || 12} reviews) · 👀 {product.views || 1} views
                 </div>
               </div>
               <div style={{ fontSize: 22, fontWeight: 900, color: "#1c1917" }}>
@@ -147,20 +279,112 @@ export default function ProductDetailModal({
               </button>
             </div>
 
-            {/* Customer Reviews Highlight */}
-            <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid #f1e8dc" }}>
-              <b style={{ fontSize: 14 }}>⭐ Customer Reviews</b>
-              {!reviews.length ? (
-                <div style={{ fontSize: 12.5, color: "#78716c", marginTop: 6 }}>
+            {/* Task 1 & 3: Rating Breakdown & Customer Reviews */}
+            <div style={{ marginTop: 22, paddingTop: 16, borderTop: "1px solid #f1e8dc" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div>
+                  <b style={{ fontSize: 15 }}>⭐ Ratings & Reviews</b>
+                  <div style={{ fontSize: 12, color: "#78716c" }}>Overall Score: {avgRating} out of 5</div>
+                </div>
+
+                <button
+                  type="button"
+                  className="dash-mini"
+                  style={{ background: "#fef3c7", color: "#d97706", fontSize: 12, padding: "6px 12px", fontWeight: 800 }}
+                  onClick={prepareReviewForm}
+                >
+                  ✍️ Write Review
+                </button>
+              </div>
+
+              {/* Rating Breakdown Bars */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 14, background: "#fffaf0", padding: 12, borderRadius: 14 }}>
+                {distribution.map((d) => (
+                  <div key={d.stars} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5 }}>
+                    <span style={{ minWidth: 28, color: "#f59e0b", fontWeight: 700 }}>{d.stars} ★</span>
+                    <div style={{ flex: 1, height: 6, background: "#f3f4f6", borderRadius: 3, overflow: "hidden" }}>
+                      <div style={{ width: `${d.pct}%`, height: "100%", background: "#f59e0b", borderRadius: 3 }} />
+                    </div>
+                    <span style={{ minWidth: 24, color: "#78716c", textAlign: "right" }}>{d.pct}%</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Review Write/Edit Form Modal Overlay inside */}
+              {showReviewForm && (
+                <form onSubmit={handleSubmitReview} style={{ background: "#fff", border: "1.5px solid #f59e0b", padding: 14, borderRadius: 16, marginBottom: 14 }}>
+                  <b style={{ fontSize: 13, display: "block", marginBottom: 8 }}>
+                    {existingReviewId ? "✏️ Edit Your Review" : "✍️ Swaadish Review Likhein"}
+                  </b>
+
+                  <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        type="button"
+                        key={star}
+                        style={{ fontSize: 22, background: "none", border: "none", cursor: "pointer", opacity: star <= userRating ? 1 : 0.3 }}
+                        onClick={() => setUserRating(star)}
+                      >
+                        ⭐
+                      </button>
+                    ))}
+                  </div>
+
+                  <input
+                    className="dash-input"
+                    placeholder="Aapka Naam"
+                    value={reviewerName}
+                    onChange={(e) => setReviewerName(e.target.value)}
+                    style={{ marginBottom: 8 }}
+                    required
+                  />
+
+                  <input
+                    className="dash-input"
+                    placeholder="Mobile Number (Verified)"
+                    value={reviewerPhone}
+                    onChange={(e) => setReviewerPhone(e.target.value)}
+                    style={{ marginBottom: 8 }}
+                    required
+                  />
+
+                  <textarea
+                    className="dash-input"
+                    rows={2}
+                    placeholder="Khaane ka swaad aur experience kaisa raha?"
+                    value={reviewText}
+                    onChange={(e) => setReviewText(e.target.value)}
+                    style={{ marginBottom: 10 }}
+                  />
+
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button type="submit" className="btn-primary" style={{ fontSize: 12, padding: "8px 14px" }} disabled={submittingReview}>
+                      {submittingReview ? "Saving..." : existingReviewId ? "Update Review" : "Submit Review"}
+                    </button>
+                    <button type="button" className="btn-ghost" style={{ fontSize: 12, padding: "8px 14px" }} onClick={() => setShowReviewForm(false)}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Customer Reviews List */}
+              {!productReviews.length ? (
+                <div style={{ fontSize: 12.5, color: "#78716c", fontStyle: "italic" }}>
                   "Bahut swaadish aur fresh khana hai!" — <i>Ramesh K. ⭐5.0</i>
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
-                  {reviews.slice(0, 2).map((r) => (
-                    <div key={r.id} style={{ background: "#fffaf0", padding: "8px 12px", borderRadius: 12, border: "1px solid #f1e8dc" }}>
-                      <div style={{ fontSize: 12, color: "#f59e0b", fontWeight: 700 }}>{"⭐".repeat(r.rating || 5)}</div>
-                      <p style={{ fontSize: 12.5, color: "#292524", margin: "2px 0" }}>"{r.text}"</p>
-                      <span style={{ fontSize: 11, color: "#78716c" }}>— {r.name}</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {productReviews.slice(0, 4).map((r) => (
+                    <div key={r.id} style={{ background: "#ffffff", padding: "10px 12px", borderRadius: 14, border: "1px solid #f1e8dc" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ fontSize: 12, color: "#f59e0b", fontWeight: 800 }}>{"⭐".repeat(r.rating || 5)}</div>
+                        <span style={{ fontSize: 10.5, color: "#a8a29e" }}>
+                          {new Date(r.createdAt || Date.now()).toLocaleDateString("hi-IN")}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: 12.5, color: "#292524", margin: "4px 0" }}>"{r.text || "Swaadish Khana!"}"</p>
+                      <span style={{ fontSize: 11, color: "#78716c", fontWeight: 700 }}>— {r.name}</span>
                     </div>
                   ))}
                 </div>
@@ -169,7 +393,7 @@ export default function ProductDetailModal({
 
             {/* Related Products */}
             {related.length > 0 && (
-              <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid #f1e8dc" }}>
+              <div style={{ marginTop: 22, paddingTop: 16, borderTop: "1px solid #f1e8dc" }}>
                 <b style={{ fontSize: 14 }}>🍛 Is Category Ke Aur Items</b>
                 <div style={{ display: "flex", gap: 10, overflowX: "auto", marginTop: 10, paddingBottom: 6 }}>
                   {related.map((rel) => (

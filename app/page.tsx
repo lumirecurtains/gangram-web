@@ -45,21 +45,39 @@ export default function HomePage() {
   return (
     <CartProvider>
       <Header settings={settings || ({} as Settings)} />
-      <Hero settings={settings || ({} as Settings)} />
-      <CategoryChips categories={categories} active={activeCat} onSelect={setActiveCat} />
-      <div style={{ padding: "2px 16px 6px" }}>
-        <SearchBar items={items} onFilter={setQuery} />
-      </div>
-      <div className="sec-title" style={{ padding: "0 16px" }}>
-        <h2>🍽️ Hamara Menu</h2>
-        <span className="link">Sab Shakahari 🟢</span>
-      </div>
-      <MenuGrid items={visible} />
-      <ReviewsSection />
+      <main>
+        <Hero settings={settings || ({} as Settings)} />
+        <section id="menu">
+          <CategoryChips categories={categories} active={activeCat} onSelect={setActiveCat} />
+          <div style={{ padding: "2px 16px 6px" }}>
+            <SearchBar items={items} onFilter={setQuery} />
+          </div>
+          <div className="sec-title" style={{ padding: "0 16px" }}>
+            <h2>🍽️ Hamara Menu — Begusarai</h2>
+            <span className="link">Pure Veg Shakahari 🟢</span>
+          </div>
+          <MenuGrid items={visible} />
+        </section>
+        <ReviewsSection />
+
+        {/* Task 4 Local SEO Info Section */}
+        <section style={{ padding: "24px 16px", background: "#fffaf0", borderTop: "1px solid #f1e8dc", textAlign: "center", fontSize: 13, color: "#78716c", lineHeight: 1.6 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1c1917", marginBottom: 6 }}>
+            🥛 Gangaram Dairy Begusarai — Direct Local Food & Dairy Delivery
+          </h3>
+          <p style={{ maxWidth: 600, margin: "0 auto 8px" }}>
+            Station Road, Gangaram Chowk, Begusarai, Bihar mein aapka swaagat hai! Hum taaza pure milk, paneer, desi ghee, sweets aur ghar jaisa swaadish thali seedha aapke ghar tak deliver karte hain.
+          </p>
+          <div style={{ fontSize: 12, color: "#d97706", fontWeight: 700 }}>
+            📍 Service Area: Begusarai Town, Station Road, Harrakh, Kapasiya, Zero Mile & Surrounding Areas (5 km Radius)
+          </div>
+        </section>
+      </main>
+
       <footer className="foot">
-        <b>{settings?.name || "Gangaram Dairy"}</b> · {settings?.address || ""}
+        <b>{settings?.name || "Gangaram Dairy Begusarai"}</b> · {settings?.address || "Station Road, Gangaram Chowk, Begusarai, Bihar"}
         <br />
-        🕗 {settings?.hours || "8 AM – 10 PM"} · Direct Order — No Commission
+        🕗 {settings?.hours || "8 AM – 10 PM"} · Direct Order — Zero Aggregator Commission
         <br />
         <Link href="/order-history" style={{ color: "#fbbf24", textDecoration: "underline" }}>📜 Apne Orders Dekho / Review Do</Link>
         <br />

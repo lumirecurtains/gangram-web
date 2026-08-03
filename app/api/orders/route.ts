@@ -138,6 +138,19 @@ export async function POST(req: Request) {
       )
       .catch(() => {});
 
+    // Sprint A1 Task 5: Increment Product Intelligence Orders Count
+    if (Array.isArray(items)) {
+      for (const it of items) {
+        if (it?.itemId) {
+          await adminDb
+            .collection("menuItems")
+            .doc(String(it.itemId))
+            .set({ ordersCount: FieldValue.increment(Number(it.qty) || 1) }, { merge: true })
+            .catch(() => {});
+        }
+      }
+    }
+
     return NextResponse.json({ ok: true, orderNo, orderId: orderRef.id, deliveryCharge: expectedDeliveryFee, grandTotal: calculatedGrandTotal });
   } catch (e: any) {
     console.error("Order API error:", e);
