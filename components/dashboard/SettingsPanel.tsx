@@ -148,9 +148,85 @@ export default function SettingsPanel() {
         <div style={{ fontSize: 11.5, color: "#a8a29e", marginTop: 4 }}>Country code ke saath (91 + number), bina + ke</div>
       </div>
 
+      {/* Sprint 2 Task 6: GPS & Automatic Delivery Eligibility Settings */}
+      <div className="dash-card" style={{ marginBottom: 12 }}>
+        <b style={{ fontSize: 13.5 }}>📍 Restaurant Location & Automatic Delivery Settings</b>
+        
+        <div className="dash-grid" style={{ marginTop: 10 }}>
+          <div>
+            <label style={{ fontSize: 11.5, color: "#78716c", fontWeight: 700 }}>Restaurant Latitude</label>
+            <input
+              className="dash-input"
+              style={{ marginTop: 4 }}
+              type="number"
+              step="any"
+              placeholder="e.g. 25.4181"
+              value={s.restaurantLat ?? 25.4181}
+              onChange={(e) => save({ restaurantLat: Number(e.target.value) })}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 11.5, color: "#78716c", fontWeight: 700 }}>Restaurant Longitude</label>
+            <input
+              className="dash-input"
+              style={{ marginTop: 4 }}
+              type="number"
+              step="any"
+              placeholder="e.g. 86.1272"
+              value={s.restaurantLng ?? 86.1272}
+              onChange={(e) => save({ restaurantLng: Number(e.target.value) })}
+            />
+          </div>
+        </div>
+
+        <div className="dash-grid" style={{ marginTop: 8 }}>
+          <div>
+            <label style={{ fontSize: 11.5, color: "#78716c", fontWeight: 700 }}>Maximum Delivery Distance (KM)</label>
+            <input
+              className="dash-input"
+              style={{ marginTop: 4 }}
+              type="number"
+              min={1}
+              max={100}
+              placeholder="e.g. 5"
+              value={s.maxDeliveryKm ?? 5}
+              onChange={(e) => save({ maxDeliveryKm: Number(e.target.value) })}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 11.5, color: "#78716c", fontWeight: 700 }}>Base Delivery Charge (₹)</label>
+            <input
+              className="dash-input"
+              style={{ marginTop: 4 }}
+              type="number"
+              min={0}
+              placeholder="e.g. 20"
+              value={s.baseDeliveryCharge ?? 20}
+              onChange={(e) => save({ baseDeliveryCharge: Number(e.target.value) })}
+            />
+          </div>
+        </div>
+
+        <div style={{ marginTop: 8 }}>
+          <label style={{ fontSize: 11.5, color: "#78716c", fontWeight: 700 }}>Per-Kilometre Charge (₹/km)</label>
+          <input
+            className="dash-input"
+            style={{ marginTop: 4 }}
+            type="number"
+            min={0}
+            placeholder="e.g. 10"
+            value={s.perKmCharge ?? 10}
+            onChange={(e) => save({ perKmCharge: Number(e.target.value) })}
+          />
+          <div style={{ fontSize: 11, color: "#a8a29e", marginTop: 4 }}>
+            Customer location max distance pass hote hi checkout disable ho jayega aur per-km charge auto calculate hoga.
+          </div>
+        </div>
+      </div>
+
       {/* Delivery bands */}
       <div className="dash-card" style={{ marginBottom: 12 }}>
-        <b style={{ fontSize: 13.5 }}>🛵 Delivery Charges (distance bands)</b>
+        <b style={{ fontSize: 13.5 }}>🛵 Delivery Charges (distance bands fallback)</b>
         {(s.deliveryBands || []).map((b, i) => (
           <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
             <input className="dash-input" style={{ flex: 1 }} value={b.km === 99 ? "5+" : `${b.km} km`} disabled />

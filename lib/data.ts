@@ -95,3 +95,26 @@ export function bandCharge(s: Settings, km: number): number {
   }
   return bands[bands.length - 1]?.charge ?? 40;
 }
+
+// Spherical Haversine distance calculation in KM (Sprint 2 - Task 3)
+export function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const dist = R * c;
+  return Math.round(dist * 10) / 10; // Round to 1 decimal place
+}
+
+// Automatic delivery fee calculation (Sprint 2 - Task 5)
+export function calculateDeliveryFee(s: Settings, distanceKm: number): number {
+  const base = s.baseDeliveryCharge ?? 20;
+  const perKm = s.perKmCharge ?? 10;
+  return Math.round(base + distanceKm * perKm);
+}

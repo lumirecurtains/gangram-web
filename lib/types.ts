@@ -24,6 +24,12 @@ export interface Settings {
   reopenDate?: string;
   reopenTime?: string;
   closureMessage?: string;
+  // Extended location & delivery fields (Sprint 2)
+  restaurantLat?: number;
+  restaurantLng?: number;
+  maxDeliveryKm?: number;
+  baseDeliveryCharge?: number;
+  perKmCharge?: number;
 }
 
 export interface Category {
