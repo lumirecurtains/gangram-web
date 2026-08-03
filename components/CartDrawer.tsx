@@ -4,10 +4,11 @@
 
 import { useCart } from "@/contexts/CartContext";
 import { Settings } from "@/lib/types";
-import { bandCharge } from "@/lib/data";
+import { bandCharge, isRestaurantOpen } from "@/lib/data";
 
 export default function CartDrawer({ settings }: { settings: Settings }) {
   const { lines, count, total, setQty } = useCart();
+  const isOpen = settings ? isRestaurantOpen(settings) : true;
 
   return (
     <>
@@ -52,12 +53,15 @@ export default function CartDrawer({ settings }: { settings: Settings }) {
             </div>
             <button
               className="checkout-btn"
+              disabled={!isOpen}
+              style={!isOpen ? { background: "#a8a29e", cursor: "not-allowed" } : {}}
               onClick={() => {
+                if (!isOpen) return;
                 close();
                 document.getElementById("modal")?.classList.add("show");
               }}
             >
-              Checkout →
+              {isOpen ? "Checkout →" : "⏸️ Restaurant Closed — Checkout Unavailable"}
             </button>
             <div className="micro-note">*Delivery distance checkout pe select hogi</div>
           </div>

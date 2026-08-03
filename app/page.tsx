@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CartProvider } from "@/contexts/CartContext";
 import { Category, MenuItem, Settings } from "@/lib/types";
-import { onCategories, onMenuItems, onSettings } from "@/lib/data";
+import { onCategories, onMenuItems, onSettings, isRestaurantOpen, getClosureNote } from "@/lib/data";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import CategoryChips from "@/components/CategoryChips";
@@ -34,6 +34,8 @@ export default function HomePage() {
     return () => unsubs.forEach((u) => u());
   }, []);
 
+  const isOpen = settings ? isRestaurantOpen(settings) : true;
+
   // Category + search dono filter
   const visible = items.filter((m) => {
     const catOk = activeCat === "all" || !activeCat || m.categoryId === activeCat;
@@ -46,6 +48,12 @@ export default function HomePage() {
     <CartProvider>
       <Header settings={settings || ({} as Settings)} />
       <main>
+        {/* BUG-002: Customer Closed Notification Banner */}
+        {settings && !isOpen && (
+          <div style={{ background: "#fffaf0", borderBottom: "1.5px solid #fde68a", color: "#92400e", padding: "12px 16px", textAlign: "center", fontSize: 13.5, fontWeight: 700 }}>
+            📢 {getClosureNote(settings)} — <span style={{ color: "#b45309" }}>Aap hamara menu dekh sakte hain, par ordering filhaal closed hai.</span>
+          </div>
+        )}
         <Hero settings={settings || ({} as Settings)} />
         <section id="menu">
           <CategoryChips categories={categories} active={activeCat} onSelect={setActiveCat} />
@@ -56,7 +64,7 @@ export default function HomePage() {
             <h2>🍽️ Hamara Menu — Begusarai</h2>
             <span className="link">Pure Veg Shakahari 🟢</span>
           </div>
-          <MenuGrid items={visible} />
+          <MenuGrid items={visible} settings={settings || undefined} />
         </section>
         <ReviewsSection />
 

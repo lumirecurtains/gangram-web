@@ -11,19 +11,21 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MenuItem, Review } from "@/lib/types";
+import { MenuItem, Review, Settings } from "@/lib/types";
 import { useCart } from "@/contexts/CartContext";
-import { onMenuItems } from "@/lib/data";
+import { onMenuItems, isRestaurantOpen, getClosureNote } from "@/lib/data";
 import { getProductBadges, incrementProductViews } from "@/lib/badges";
 import { collection, onSnapshot, doc, setDoc, updateDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 
 export default function ProductDetailModal({
   product,
+  settings,
   onClose,
   onSelectProduct,
 }: {
   product: MenuItem | null;
+  settings?: Settings;
   onClose: () => void;
   onSelectProduct?: (p: MenuItem) => void;
 }) {
@@ -256,28 +258,45 @@ export default function ProductDetailModal({
             </p>
 
             {/* Quantity Selector & Add to Cart */}
-            <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 18, paddingTop: 14, borderTop: "1px dashed #f1e8dc" }}>
-              <div className="qty" style={{ padding: "6px 10px" }}>
-                <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))}>-</button>
-                <span className="q" style={{ minWidth: 20, fontSize: 15 }}>{qty}</span>
-                <button type="button" onClick={() => setQty((q) => q + 1)}>+</button>
-              </div>
+            {(() => {
+              const isOpen = settings ? isRestaurantOpen(settings) : true;
+              return (
+                <div style={{ display: "flex", gap: 14, alignItems: "center", marginTop: 18, paddingTop: 14, borderTop: "1px dashed #f1e8dc" }}>
+                  <div className="qty" style={{ padding: "6px 10px" }}>
+                    <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} disabled={!isOpen}>-</button>
+                    <span className="q" style={{ minWidth: 20, fontSize: 15 }}>{qty}</span>
+                    <button type="button" onClick={() => setQty((q) => q + 1)} disabled={!isOpen}>+</button>
+                  </div>
 
-              <button
-                type="button"
-                className="checkout-btn"
-                style={{ marginTop: 0, flex: 1, padding: 13, fontSize: 14.5 }}
-                disabled={!product.available}
-                onClick={() => {
-                  for (let i = 0; i < qty; i++) {
-                    add(product);
-                  }
-                  onClose();
-                }}
-              >
-                {product.available ? `➕ Add ${qty} to Cart (₹${product.price * qty})` : "Sold Out"}
-              </button>
-            </div>
+                  <button
+                    type="button"
+                    className="checkout-btn"
+                    style={{
+                      marginTop: 0,
+                      flex: 1,
+                      padding: 13,
+                      fontSize: 14,
+                      background: !isOpen ? "#a8a29e" : undefined,
+                      cursor: !isOpen ? "not-allowed" : undefined,
+                    }}
+                    disabled={!product.available || !isOpen}
+                    onClick={() => {
+                      if (!isOpen) return;
+                      for (let i = 0; i < qty; i++) {
+                        add(product);
+                      }
+                      onClose();
+                    }}
+                  >
+                    {!isOpen
+                      ? `⏸️ Ordering Closed (${settings ? getClosureNote(settings) : "Restaurant Closed"})`
+                      : !product.available
+                      ? "Sold Out"
+                      : `➕ Add ${qty} to Cart (₹${product.price * qty})`}
+                  </button>
+                </div>
+              );
+            })()}
 
             {/* Task 1 & 3: Rating Breakdown & Customer Reviews */}
             <div style={{ marginTop: 22, paddingTop: 16, borderTop: "1px solid #f1e8dc" }}>

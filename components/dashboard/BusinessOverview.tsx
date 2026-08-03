@@ -67,7 +67,13 @@ export default function BusinessOverview({
   async function updateRestaurantStatus(patch: Partial<Settings>) {
     setStatusSaving(true);
     try {
-      await updateDoc(doc(db, "settings", "main"), patch);
+      const cleanPatch: Record<string, any> = {};
+      for (const [k, v] of Object.entries(patch)) {
+        if (v !== undefined) cleanPatch[k] = v;
+      }
+      if (Object.keys(cleanPatch).length > 0) {
+        await updateDoc(doc(db, "settings", "main"), cleanPatch);
+      }
     } catch (e: any) {
       alert("Status update fail: " + e.message);
     } finally {

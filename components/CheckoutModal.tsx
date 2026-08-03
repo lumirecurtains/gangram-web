@@ -13,7 +13,7 @@
 import { useState, useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { Settings } from "@/lib/types";
-import { bandCharge, calculateDistanceKm, calculateDeliveryFee } from "@/lib/data";
+import { bandCharge, calculateDistanceKm, calculateDeliveryFee, isRestaurantOpen } from "@/lib/data";
 import { auth } from "@/lib/firebase";
 import {
   RecaptchaVerifier,
@@ -253,6 +253,10 @@ export default function CheckoutModal({ settings }: { settings: Settings }) {
 
   // Place Order Action
   async function placeOrder() {
+    if (settings && !isRestaurantOpen(settings)) {
+      toast("⏸️ Restaurant is currently closed. Cannot place order.");
+      return;
+    }
     if (!currentUser && !auth.currentUser) {
       setAuthError("Pehle phone number verify karna zaroori hai.");
       toast("Pehle Phone OTP verify karein!");
@@ -322,10 +326,44 @@ export default function CheckoutModal({ settings }: { settings: Settings }) {
   const step2Done = step1Done && name.trim().length > 0 && addr.trim().length > 0;
   const step3Done = step2Done && !isIneligible;
 
+  // Helper to safely close checkout modal (BUG-001)
+  function closeModal() {
+    if (typeof document !== "undefined") {
+      document.getElementById("modal")?.classList.remove("show");
+    }
+  }
+
   return (
     <div className="modal" id="modal">
-      <div className="modal-box" style={{ maxWidth: 460, borderRadius: 24, padding: "20px 22px" }}>
+      <div className="modal-box" style={{ maxWidth: 460, borderRadius: 24, padding: "20px 22px", position: "relative" }}>
         <div id="recaptcha-container"></div>
+
+        {/* BUG-001: Close Checkout Modal Button */}
+        <button
+          type="button"
+          onClick={closeModal}
+          style={{
+            position: "absolute",
+            top: 14,
+            right: 14,
+            background: "#f3f4f6",
+            border: "none",
+            borderRadius: "50%",
+            width: 32,
+            height: 32,
+            fontSize: 16,
+            fontWeight: 800,
+            color: "#57534e",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10,
+          }}
+          aria-label="Close Checkout"
+        >
+          ✕
+        </button>
 
         {/* Task 7: Visual Step Progress Indicator */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid #f1e8dc" }}>
@@ -553,6 +591,16 @@ export default function CheckoutModal({ settings }: { settings: Settings }) {
             : !currentUser
             ? "🔒 Please Verify Phone Number to Order"
             : "💬 WhatsApp pe Order Bhejo"}
+        </button>
+
+        {/* BUG-001: Secondary Leave / Cancel Checkout Button */}
+        <button
+          type="button"
+          className="btn-ghost"
+          style={{ width: "100%", marginTop: 10, fontSize: 13, padding: "8px 12px" }}
+          onClick={closeModal}
+        >
+          ← Cancel & Return to Cart
         </button>
       </div>
     </div>

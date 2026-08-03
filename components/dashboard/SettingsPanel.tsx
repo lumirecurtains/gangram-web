@@ -22,7 +22,12 @@ export default function SettingsPanel() {
   if (!s) return <p style={{ color: "#a8a29e" }}>Loading…</p>;
 
   async function save(patch: Partial<Settings>) {
-    await updateDoc(doc(db, "settings", "main"), patch);
+    const cleanPatch: Record<string, any> = {};
+    for (const [k, v] of Object.entries(patch)) {
+      if (v !== undefined) cleanPatch[k] = v;
+    }
+    if (Object.keys(cleanPatch).length === 0) return;
+    await updateDoc(doc(db, "settings", "main"), cleanPatch);
     setMsg("✅ Saved!");
     setTimeout(() => setMsg(""), 1500);
   }
@@ -79,7 +84,7 @@ export default function SettingsPanel() {
             type="button"
             className="dash-mini"
             style={(s.closureMode === "open" ? false : (!s.open && s.closureMode !== "temp_close" && s.closureMode !== "holiday")) ? { background: "#fee2e2", color: "#dc2626", padding: "8px 16px", fontSize: 13, fontWeight: 800 } : { padding: "8px 16px", fontSize: 13 }}
-            onClick={() => save({ open: false, closureMode: undefined })}
+            onClick={() => save({ open: false, closureMode: "temp_close" })}
           >
             🔴 Closed
           </button>

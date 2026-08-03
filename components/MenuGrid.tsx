@@ -6,16 +6,18 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MenuItem } from "@/lib/types";
+import { MenuItem, Settings } from "@/lib/types";
 import { useCart } from "@/contexts/CartContext";
 import ProductDetailModal from "@/components/ProductDetailModal";
 import { getProductBadges } from "@/lib/badges";
+import { isRestaurantOpen } from "@/lib/data";
 
 const GRADS = ["bg-1", "bg-2", "bg-3", "bg-4", "bg-5", "bg-6"];
 
-export default function MenuGrid({ items }: { items: MenuItem[] }) {
+export default function MenuGrid({ items, settings }: { items: MenuItem[]; settings?: Settings }) {
   const { add } = useCart();
   const [selectedProduct, setSelectedProduct] = useState<MenuItem | null>(null);
+  const isOpen = settings ? isRestaurantOpen(settings) : true;
 
   if (!items.length) {
     return (
@@ -41,6 +43,7 @@ export default function MenuGrid({ items }: { items: MenuItem[] }) {
               m={m}
               i={i}
               allItems={items}
+              isOpen={isOpen}
               add={add}
               onClickProduct={(prod) => setSelectedProduct(prod)}
             />
@@ -50,6 +53,7 @@ export default function MenuGrid({ items }: { items: MenuItem[] }) {
 
       <ProductDetailModal
         product={selectedProduct}
+        settings={settings}
         onClose={() => setSelectedProduct(null)}
         onSelectProduct={(p) => setSelectedProduct(p)}
       />
@@ -61,12 +65,14 @@ function MenuCard({
   m,
   i,
   allItems,
+  isOpen = true,
   add,
   onClickProduct,
 }: {
   m: MenuItem;
   i: number;
   allItems: MenuItem[];
+  isOpen?: boolean;
   add: (m: MenuItem) => void;
   onClickProduct: (m: MenuItem) => void;
 }) {
@@ -140,6 +146,7 @@ function MenuCard({
         </div>
 
         {!m.available && <span className="tag sold">Sold Out</span>}
+        {!isOpen && <span className="tag sold" style={{ background: "#78716c", color: "#fff" }}>Closed</span>}
       </div>
       <div className="card-body">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -156,15 +163,18 @@ function MenuCard({
           </div>
           <motion.button
             className="add-btn"
-            disabled={!m.available}
-            whileTap={{ scale: 0.75, rotate: 90 }}
+            disabled={!m.available || !isOpen}
+            style={!isOpen ? { opacity: 0.4, cursor: "not-allowed", background: "#a8a29e" } : {}}
+            title={!isOpen ? "Ordering currently unavailable (Restaurant Closed)" : "Add to Cart"}
+            whileTap={isOpen ? { scale: 0.75, rotate: 90 } : undefined}
             onClick={(e) => {
               e.stopPropagation();
+              if (!isOpen) return;
               add(m);
               flyToCart(e.currentTarget);
             }}
           >
-            +
+            {isOpen ? "+" : "🔒"}
           </motion.button>
         </div>
       </div>
