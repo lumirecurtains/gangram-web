@@ -63,6 +63,26 @@ export interface CartLine {
   qty: number;
 }
 
+export type OrderStatus =
+  | "placed"
+  | "accepted"
+  | "preparing"
+  | "packed"
+  | "out_for_delivery"
+  | "delivered"
+  | "customer_confirmed"
+  | "review_completed"
+  | "cancelled";
+
+export type StatusActor = "system" | "owner" | "customer";
+
+export interface StatusHistoryEntry {
+  stage: OrderStatus;
+  timestamp: number;
+  actor: StatusActor;
+  note?: string | null;
+}
+
 export interface OrderItem {
   itemId: string;
   name: string;
@@ -81,7 +101,17 @@ export interface Order {
   deliveryCharge: number;
   grandTotal: number;
   distanceKm?: number | null;
-  status: "placed";
+  status: OrderStatus;
+  statusHistory?: StatusHistoryEntry[];
+  estimatedWindowStart?: number | null;
+  estimatedWindowEnd?: number | null;
+  acceptedAt?: number | null;
+  deliveredAt?: number | null;
+  confirmedAt?: number | null;
+  confirmedBy?: "customer" | "auto" | null;
+  cancellationReason?: string | null;
+  deliveryProofNote?: string | null;
+  deliveryProofPhotoRef?: string | null;
   createdAt: number;
 }
 

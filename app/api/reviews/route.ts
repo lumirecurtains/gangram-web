@@ -23,10 +23,12 @@ export async function GET() {
   }
 }
 
+import { executeOrderTransitionServer } from "@/lib/tracking";
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, phone, rating, text } = body;
+    const { name, phone, rating, text, orderId, productId } = body;
     if (!name?.trim() || !phone || String(phone).length < 10) {
       return NextResponse.json({ error: "Naam aur phone chahiye" }, { status: 400 });
     }
@@ -43,9 +45,25 @@ export async function POST(req: Request) {
       phone: String(phone).trim(),
       rating: r,
       text: text.trim(),
+      orderId: orderId || null,
+      productId: productId || null,
       hidden: false,
       createdAt: Timestamp.now().toMillis(),
     });
+
+    // If tied to an order, transition order state to review_completed
+    if (orderId && typeof orderId === "string") {
+      try {
+        await executeOrderTransitionServer({
+          orderId,
+          targetStatus: "review_completed",
+          actor: "customer",
+        });
+      } catch (tErr) {
+        console.warn("Review transition notice:", tErr);
+      }
+    }
+
     return NextResponse.json({ ok: true, reviewId: ref.id });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Error" }, { status: 500 });

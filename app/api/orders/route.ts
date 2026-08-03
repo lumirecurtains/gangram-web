@@ -108,6 +108,14 @@ export async function POST(req: Request) {
 
     const orderRef = adminDb.collection("orders").doc();
     const cleanPhone = String(customerPhone).trim();
+    const now = Timestamp.now().toMillis();
+
+    const initialHistoryEntry = {
+      stage: "placed",
+      timestamp: now,
+      actor: "system",
+      note: "Order received",
+    };
 
     await orderRef.set({
       orderNo,
@@ -120,7 +128,17 @@ export async function POST(req: Request) {
       grandTotal: calculatedGrandTotal,
       distanceKm: typeof distanceKm === "number" ? distanceKm : null,
       status: "placed",
-      createdAt: Timestamp.now().toMillis(),
+      statusHistory: [initialHistoryEntry],
+      estimatedWindowStart: null,
+      estimatedWindowEnd: null,
+      acceptedAt: null,
+      deliveredAt: null,
+      confirmedAt: null,
+      confirmedBy: null,
+      cancellationReason: null,
+      deliveryProofNote: null,
+      deliveryProofPhotoRef: null,
+      createdAt: now,
     });
 
     // Save Customer Record

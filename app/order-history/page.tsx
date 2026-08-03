@@ -2,8 +2,10 @@
 
 // 📜 Order History — customer apni orders (phone se) + review do
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+
+import { CustomerOrderTracker } from "@/components/CustomerOrderTracker";
 
 export default function OrderHistoryPage() {
   const [phone, setPhone] = useState("");
@@ -30,6 +32,24 @@ export default function OrderHistoryPage() {
     setLoading(false);
   }
 
+  // Live tracking polling when phone number is active
+  useEffect(() => {
+    if (!orders || phone.length < 10) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/orders/history?phone=${encodeURIComponent(phone)}`);
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.orders)) {
+          setOrders(data.orders);
+        }
+      } catch (err) {
+        console.warn("Live tracking sync notice:", err);
+      }
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [orders, phone]);
+
   async function submitReview() {
     if (rName.trim().length < 2 || rPhone.length < 10 || rText.trim().length < 3) {
       setRMsg("Naam, phone aur thodi review likho!");
@@ -52,9 +72,9 @@ export default function OrderHistoryPage() {
         <Link href="/" style={{ color: "#d97706", fontSize: 13, fontWeight: 700 }}>← Menu</Link>
       </header>
 
-      <h1 style={{ fontSize: 22, fontWeight: 900 }}>📜 Order History</h1>
+      <h1 style={{ fontSize: 22, fontWeight: 900 }}>📜 Order Tracking & History</h1>
       <p style={{ fontSize: 13.5, color: "#78716c", margin: "6px 0 14px" }}>
-        Apna phone number daalo — aapke saare orders dikh jayenge.
+        Apna phone number daalo — aapke saare active orders ka live status aur history dikh jayegi.
       </p>
       <div style={{ display: "flex", gap: 8 }}>
         <input className="dash-input" type="tel" placeholder="10 digit phone number" value={phone} onChange={(e) => setPhone(e.target.value)} />
@@ -69,16 +89,7 @@ export default function OrderHistoryPage() {
             <p style={{ color: "#a8a29e", fontSize: 13.5 }}>Is number pe koi order nahi mila.</p>
           ) : (
             orders.map((o) => (
-              <div key={o.id} className="dash-card" style={{ marginBottom: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <b>{o.orderNo}</b>
-                  <span style={{ fontSize: 11.5, color: "#a8a29e" }}>{new Date(o.createdAt).toLocaleString("hi-IN")}</span>
-                </div>
-                {(o.items || []).map((it: any, i: number) => (
-                  <div key={i} style={{ fontSize: 12.5, color: "#57534e" }}>• {it.name} × {it.qty} = ₹{it.price * it.qty}</div>
-                ))}
-                <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4 }}>Total: ₹{o.grandTotal}</div>
-              </div>
+              <CustomerOrderTracker key={o.id} order={o} onRefresh={search} />
             ))
           )}
         </div>
