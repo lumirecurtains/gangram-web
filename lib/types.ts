@@ -74,6 +74,7 @@ export interface Order {
   itemTotal: number;
   deliveryCharge: number;
   grandTotal: number;
+  distanceKm?: number | null;
   status: "placed";
   createdAt: number;
 }
