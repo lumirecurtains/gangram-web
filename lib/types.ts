@@ -19,6 +19,11 @@ export interface Settings {
   banner: string;         // Cloudinary URL (optional)
   ownerEmails: string[];  // admin auth — rules ke liye
   deliveryBands: DeliveryBand[];
+  // Extended closure fields (Task 3)
+  closureMode?: "open" | "temp_close" | "holiday";
+  reopenDate?: string;
+  reopenTime?: string;
+  closureMessage?: string;
 }
 
 export interface Category {

@@ -12,6 +12,7 @@ import OrdersPanel from "@/components/dashboard/OrdersPanel";
 import RevenuePanel from "@/components/dashboard/RevenuePanel";
 import ReviewsPanel from "@/components/dashboard/ReviewsPanel";
 import SettingsPanel from "@/components/dashboard/SettingsPanel";
+import CustomersPanel from "@/components/dashboard/CustomersPanel";
 
 function LoginScreen() {
   const { signIn, loading } = useAuth();
@@ -68,7 +69,7 @@ function DashboardShell() {
 
   const TABS = [
     ["menu", "🍽️ Menu"], ["cats", "🏷️ Categories"], ["orders", "📦 Orders"],
-    ["rev", "💰 Revenue"], ["reviews", "⭐ Reviews"], ["settings", "⚙️ Settings"],
+    ["customers", "👥 Customers"], ["rev", "💰 Revenue"], ["reviews", "⭐ Reviews"], ["settings", "⚙️ Settings"],
   ];
 
   return (
@@ -93,6 +94,7 @@ function DashboardShell() {
         {tab === "menu" && <MenuManager />}
         {tab === "cats" && <CategoryManager />}
         {tab === "orders" && <OrdersPanel />}
+        {tab === "customers" && <CustomersPanel />}
         {tab === "rev" && <RevenuePanel />}
         {tab === "reviews" && <ReviewsPanel />}
         {tab === "settings" && <SettingsPanel />}

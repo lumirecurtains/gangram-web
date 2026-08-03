@@ -23,7 +23,15 @@ export default function Header({ settings }: { settings: Settings }) {
         <div className="header-right">
           <div className={`open-pill ${open ? "" : "closed"}`}>
             <span className="dot"></span>
-            <span>{open ? "Open" : "Closed"}</span>
+            <span>
+              {open
+                ? "Open"
+                : settings.closureMode === "holiday"
+                ? "Holiday"
+                : settings.closureMode === "temp_close"
+                ? "Temp Closed"
+                : "Closed"}
+            </span>
           </div>
           <button className="cart-btn" onClick={() => document.getElementById("drawer")?.classList.add("show")}>
             🛒

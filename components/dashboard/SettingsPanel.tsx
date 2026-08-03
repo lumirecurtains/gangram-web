@@ -44,17 +44,84 @@ export default function SettingsPanel() {
       <h3 style={{ fontSize: 17, marginBottom: 12 }}>⚙️ Settings</h3>
       {msg && <p style={{ color: "#16a34a", fontWeight: 700 }}>{msg}</p>}
 
-      {/* Open/Close */}
+      {/* Open/Close & Holiday / Temporary Closure (Task 3 Extended) */}
       <div className="dash-card" style={{ marginBottom: 12 }}>
-        <b style={{ fontSize: 13.5 }}>🟢 Open / Close</b>
+        <b style={{ fontSize: 13.5 }}>🟢 Restaurant Status & Closure Modes</b>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+          <button
+            type="button"
+            className="dash-mini"
+            style={(s.closureMode === "open" || (!s.closureMode && s.open)) ? { background: "#dcfce7", color: "#16a34a", padding: "8px 16px", fontSize: 13, fontWeight: 800 } : { padding: "8px 16px", fontSize: 13 }}
+            onClick={() => save({ open: true, closureMode: "open" })}
+          >
+            🟢 Open
+          </button>
+
+          <button
+            type="button"
+            className="dash-mini"
+            style={s.closureMode === "temp_close" ? { background: "#fef3c7", color: "#d97706", padding: "8px 16px", fontSize: 13, fontWeight: 800 } : { padding: "8px 16px", fontSize: 13 }}
+            onClick={() => save({ open: false, closureMode: "temp_close" })}
+          >
+            ⏸️ Temporary Close
+          </button>
+
+          <button
+            type="button"
+            className="dash-mini"
+            style={s.closureMode === "holiday" ? { background: "#e0f2fe", color: "#0284c7", padding: "8px 16px", fontSize: 13, fontWeight: 800 } : { padding: "8px 16px", fontSize: 13 }}
+            onClick={() => save({ open: false, closureMode: "holiday" })}
+          >
+            🌴 Holiday Mode
+          </button>
+
+          <button
+            type="button"
+            className="dash-mini"
+            style={(s.closureMode === "open" ? false : (!s.open && s.closureMode !== "temp_close" && s.closureMode !== "holiday")) ? { background: "#fee2e2", color: "#dc2626", padding: "8px 16px", fontSize: 13, fontWeight: 800 } : { padding: "8px 16px", fontSize: 13 }}
+            onClick={() => save({ open: false, closureMode: undefined })}
+          >
+            🔴 Closed
+          </button>
+        </div>
+
+        {/* Reopen Date & Time Inputs */}
+        <div className="dash-grid" style={{ marginTop: 12 }}>
+          <div>
+            <label style={{ fontSize: 11.5, color: "#78716c", fontWeight: 700 }}>Reopen Date</label>
+            <input
+              className="dash-input"
+              style={{ marginTop: 4 }}
+              placeholder="e.g. Tomorrow / 15 Aug"
+              value={s.reopenDate || ""}
+              onChange={(e) => save({ reopenDate: e.target.value })}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 11.5, color: "#78716c", fontWeight: 700 }}>Reopen Time</label>
+            <input
+              className="dash-input"
+              style={{ marginTop: 4 }}
+              placeholder="e.g. 9:00 AM"
+              value={s.reopenTime || ""}
+              onChange={(e) => save({ reopenTime: e.target.value })}
+            />
+          </div>
+        </div>
+
+        {/* Custom Closure Message */}
         <div style={{ marginTop: 8 }}>
-          <button className={`dash-mini ${s.open ? "" : "dash-mini-off"}`} style={s.open ? { background: "#dcfce7", color: "#16a34a", padding: "8px 16px", fontSize: 13 } : { padding: "8px 16px", fontSize: 13 }} onClick={() => save({ open: true })}>
-            ● Open
-          </button>
-          <button className="dash-mini" style={!s.open ? { background: "#fee2e2", color: "#dc2626", padding: "8px 16px", fontSize: 13 } : { padding: "8px 16px", fontSize: 13 }} onClick={() => save({ open: false })}>
-            ● Closed
-          </button>
-          <span style={{ fontSize: 12, color: "#78716c", marginLeft: 10 }}>Manual override — schedule se alag</span>
+          <label style={{ fontSize: 11.5, color: "#78716c", fontWeight: 700 }}>Customer Closure Message (Optional)</label>
+          <input
+            className="dash-input"
+            style={{ marginTop: 4 }}
+            placeholder='e.g. "Restaurant is closed today. Opens tomorrow at 9:00 AM."'
+            value={s.closureMessage || ""}
+            onChange={(e) => save({ closureMessage: e.target.value })}
+          />
+          <div style={{ fontSize: 11, color: "#a8a29e", marginTop: 4 }}>
+            Ye message band hone par customer website header & hero banner par live dikhega.
+          </div>
         </div>
       </div>
 

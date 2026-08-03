@@ -3,7 +3,7 @@
 // 🎬 Hero — letter-by-letter reveal + floating food + shine button (demo jaisa)
 
 import { Settings } from "@/lib/types";
-import { isRestaurantOpen } from "@/lib/data";
+import { isRestaurantOpen, getClosureNote } from "@/lib/data";
 
 export default function Hero({ settings }: { settings: Settings }) {
   const open = isRestaurantOpen(settings);
@@ -33,7 +33,7 @@ export default function Hero({ settings }: { settings: Settings }) {
 
       {!open && (
         <div className="closed-note">
-          😴 Hum abhi band hain — {settings.hours || "8 AM – 10 PM"} tak wapas aa jayenge!
+          {getClosureNote(settings)}
         </div>
       )}
     </section>

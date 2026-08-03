@@ -62,11 +62,29 @@ export function onMenuItems(cb: (m: MenuItem[]) => void): Unsubscribe {
   );
 }
 
-// Open/Closed logic — manual owner override has highest priority
+// Open/Closed logic — manual owner override & closure modes (Task 3)
 export function isRestaurantOpen(s: Settings): boolean {
+  if (s.closureMode === "temp_close" || s.closureMode === "holiday") return false;
   if (s.open === false) return false;
-  if (s.open === true) return true;
+  if (s.open === true || s.closureMode === "open") return true;
   return true;
+}
+
+// Customer-facing closure message helper (Task 3)
+export function getClosureNote(s: Settings): string {
+  if (s.closureMessage && s.closureMessage.trim()) {
+    return s.closureMessage.trim();
+  }
+  if (s.closureMode === "holiday") {
+    const when = s.reopenDate || s.reopenTime ? `Opens ${s.reopenDate || "soon"} ${s.reopenTime ? "at " + s.reopenTime : ""}`.trim() : "";
+    return `🌴 Restaurant is closed for Holiday Mode. ${when}`.trim();
+  }
+  if (s.closureMode === "temp_close") {
+    const when = s.reopenDate || s.reopenTime ? `Opens ${s.reopenDate || "soon"} ${s.reopenTime ? "at " + s.reopenTime : ""}`.trim() : "";
+    return `⏸️ Restaurant is temporarily closed. ${when}`.trim();
+  }
+  const when = s.reopenDate || s.reopenTime ? `Opens ${s.reopenDate || "tomorrow"} ${s.reopenTime ? "at " + s.reopenTime : ""}`.trim() : `Hours: ${s.hours || "8 AM – 10 PM"}`;
+  return `😴 Restaurant is currently closed. ${when}`.trim();
 }
 
 // Delivery charge — bands se

@@ -8,11 +8,13 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MenuItem } from "@/lib/types";
 import { useCart } from "@/contexts/CartContext";
+import ProductDetailModal from "@/components/ProductDetailModal";
 
 const GRADS = ["bg-1", "bg-2", "bg-3", "bg-4", "bg-5", "bg-6"];
 
 export default function MenuGrid({ items }: { items: MenuItem[] }) {
   const { add } = useCart();
+  const [selectedProduct, setSelectedProduct] = useState<MenuItem | null>(null);
 
   if (!items.length) {
     return (
@@ -29,13 +31,27 @@ export default function MenuGrid({ items }: { items: MenuItem[] }) {
   }
 
   return (
-    <div className="grid">
-      <AnimatePresence mode="popLayout">
-        {items.map((m, i) => (
-          <MenuCard key={m.id} m={m} i={i} add={add} />
-        ))}
-      </AnimatePresence>
-    </div>
+    <>
+      <div className="grid">
+        <AnimatePresence mode="popLayout">
+          {items.map((m, i) => (
+            <MenuCard
+              key={m.id}
+              m={m}
+              i={i}
+              add={add}
+              onClickProduct={(prod) => setSelectedProduct(prod)}
+            />
+          ))}
+        </AnimatePresence>
+      </div>
+
+      <ProductDetailModal
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onSelectProduct={(p) => setSelectedProduct(p)}
+      />
+    </>
   );
 }
 
@@ -43,10 +59,12 @@ function MenuCard({
   m,
   i,
   add,
+  onClickProduct,
 }: {
   m: MenuItem;
   i: number;
   add: (m: MenuItem) => void;
+  onClickProduct: (m: MenuItem) => void;
 }) {
   const [loaded, setLoaded] = useState(false);
 
@@ -54,6 +72,8 @@ function MenuCard({
     <motion.div
       layout
       className="card motion-card"
+      style={{ cursor: "pointer" }}
+      onClick={() => onClickProduct(m)}
       initial={{ opacity: 0, y: 20, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -119,6 +139,7 @@ function MenuCard({
             disabled={!m.available}
             whileTap={{ scale: 0.75, rotate: 90 }}
             onClick={(e) => {
+              e.stopPropagation();
               add(m);
               flyToCart(e.currentTarget);
             }}
