@@ -55,6 +55,7 @@ Ye collections **code automatically bana dega** — tumhe kuch nahi karna, sirf 
 - [ ] Firebase Console → **Project settings → Service accounts**
 - [ ] **Generate new private key** → JSON download karega
 - [ ] Wo JSON **repo mein mat daalna!** — alag jagah rakhna (`.env` se path denge)
+- [ ] **Vercel Note**: On Vercel, set `FIREBASE_SERVICE_ACCOUNT_KEY` as an Environment Variable in the Vercel project settings, containing the full service account JSON as one string.
 
 ---
 

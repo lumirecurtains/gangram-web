@@ -8,6 +8,20 @@ import fs from "fs";
 import path from "path";
 
 function getServiceAccount() {
+  const envKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  if (envKey) {
+    try {
+      const parsed = JSON.parse(envKey);
+      if (parsed.private_key && typeof parsed.private_key === "string") {
+        parsed.private_key = parsed.private_key.replace(/\\n/g, "\n");
+      }
+      return parsed;
+    } catch (e: any) {
+      console.error("FIREBASE_SERVICE_ACCOUNT_KEY JSON parse error:", e);
+      throw new Error(`Invalid FIREBASE_SERVICE_ACCOUNT_KEY JSON in environment: ${e.message}`);
+    }
+  }
+
   const rel = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || "./serviceAccountKey.json";
   const abs = path.resolve(process.cwd(), rel);
   if (!fs.existsSync(abs)) {
