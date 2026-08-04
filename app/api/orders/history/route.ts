@@ -1,9 +1,8 @@
-// 📜 /api/orders/history — customer ki apni orders (phone se, bina login)
-// PRD: phone-based identity — no full account system
+// 📜 /api/orders/history — customer order history (server verified)
+// Security Sprint S2: Session-scoped ID Token verification required for Order History Access (C-3)
 
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebaseAdmin";
-
+import { adminDb, adminAuth } from "@/lib/firebaseAdmin";
 import { executeOrderTransitionServer } from "@/lib/tracking";
 
 export const dynamic = "force-dynamic";
@@ -13,11 +12,47 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const phone = (searchParams.get("phone") || "").trim();
     if (phone.length < 10) {
-      return NextResponse.json({ error: "Phone number chahiye (10+ digits)" }, { status: 400 });
+      return NextResponse.json({ error: "Phone number required (10+ digits)" }, { status: 400 });
     }
+
+    // C-3: Session-scoped ID Token verification for Order History Access (Fail Closed)
+    const authHeader = req.headers.get("Authorization");
+    const idTokenParam = searchParams.get("idToken") || searchParams.get("token");
+    const token = idTokenParam || (authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null);
+
+    if (!token) {
+      return NextResponse.json(
+        { error: "Order history access requires valid phone OTP verification." },
+        { status: 401 }
+      );
+    }
+
+    let decodedToken;
+    try {
+      decodedToken = await adminAuth.verifyIdToken(token);
+    } catch (authErr) {
+      console.warn("Order history token verification failure:", authErr);
+      return NextResponse.json(
+        { error: "Order history access requires valid phone OTP verification." },
+        { status: 401 }
+      );
+    }
+
+    const verifiedNum = decodedToken.phone_number
+      ? decodedToken.phone_number.replace("+91", "").trim()
+      : "";
+    const reqNum = String(phone).replace("+91", "").trim();
+
+    if (!verifiedNum || !reqNum || verifiedNum !== reqNum) {
+      return NextResponse.json(
+        { error: "Verified session phone number does not match requested phone number." },
+        { status: 403 }
+      );
+    }
+
     const snap = await adminDb
       .collection("orders")
-      .where("customerPhone", "==", phone)
+      .where("customerPhone", "==", reqNum)
       .limit(30)
       .get();
 
@@ -56,6 +91,6 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ ok: true, orders: sorted });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "Error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal error processing order history" }, { status: 500 });
   }
 }

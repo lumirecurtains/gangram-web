@@ -1,29 +1,40 @@
-// ⭐ /api/reviews — POST: review create (server validate) · GET: public reviews
+// ⭐ /api/reviews — POST: review create (server validate) · GET: public reviews (C-4 Sanitized)
 // Owner moderate: /api/reviews?action=hide|show (token se)
 
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { Timestamp } from "firebase-admin/firestore";
 import { verifyOwner, ownerError } from "@/lib/apiAuth";
+import { executeOrderTransitionServer } from "@/lib/tracking";
 
 export const dynamic = "force-dynamic";
 
+// C-4: Explicit Public Review Response Sanitization (No sensitive phone, orderId, or metadata exposure)
 export async function GET() {
   try {
-    // Index-free: sab recent reviews lao, filter+sort client-side
     const snap = await adminDb.collection("reviews").limit(50).get();
     const reviews = snap.docs
-      .map((d) => ({ id: d.id, ...d.data() }))
-      .filter((r: any) => !r.hidden)
-      .sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0))
-      .slice(0, 20);
+      .map((d) => {
+        const data = d.data() as any;
+        return {
+          id: d.id,
+          name: data.name || "Anonymous",
+          rating: typeof data.rating === "number" ? data.rating : 5,
+          text: data.text || "",
+          createdAt: typeof data.createdAt === "number" ? data.createdAt : Date.now(),
+          hidden: !!data.hidden,
+        };
+      })
+      .filter((r) => !r.hidden)
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+      .slice(0, 20)
+      .map(({ hidden, ...publicFields }) => publicFields);
+
     return NextResponse.json({ ok: true, reviews });
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "Error" }, { status: 500 });
+    return NextResponse.json({ error: "Unable to fetch reviews" }, { status: 500 });
   }
 }
-
-import { executeOrderTransitionServer } from "@/lib/tracking";
 
 export async function POST(req: Request) {
   try {

@@ -1,23 +1,85 @@
 "use client";
 
-// 📜 Order History — customer apni orders (phone se) + review do
+// 📜 Order History — customer order tracking & reviews
+// Security Sprint S2: Session-scoped Firebase ID Token verification required for Order History Access (C-3)
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-
 import { CustomerOrderTracker } from "@/components/CustomerOrderTracker";
+import { auth } from "@/lib/firebase";
+import {
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  ConfirmationResult,
+  onAuthStateChanged,
+  User,
+} from "firebase/auth";
 
 export default function OrderHistoryPage() {
   const [phone, setPhone] = useState("");
   const [orders, setOrders] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  // Review form
+  // OTP Verification state for direct visits without active session
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [confirmResult, setConfirmResult] = useState<ConfirmationResult | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
+
+  // Review form state
   const [rName, setRName] = useState("");
   const [rPhone, setRPhone] = useState("");
   const [rRating, setRRating] = useState(5);
   const [rText, setRText] = useState("");
   const [rMsg, setRMsg] = useState("");
+
+  // Track Firebase Auth State
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setCurrentUser(u);
+      if (u?.phoneNumber) {
+        const cleanP = u.phoneNumber.replace("+91", "").trim();
+        setPhone(cleanP);
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  async function fetchHistory(targetPhone: string) {
+    if (targetPhone.length < 10) return;
+    setLoading(true);
+    setAuthError("");
+    try {
+      const u = auth.currentUser;
+      const idToken = u ? await u.getIdToken() : null;
+
+      const headers: Record<string, string> = {};
+      if (idToken) {
+        headers["Authorization"] = `Bearer ${idToken}`;
+      }
+
+      const res = await fetch(`/api/orders/history?phone=${encodeURIComponent(targetPhone)}`, {
+        headers,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        if (data.error) {
+          setAuthError(data.error);
+        }
+        setOrders([]);
+      } else {
+        setOrders(Array.isArray(data.orders) ? data.orders : []);
+      }
+    } catch (err: any) {
+      console.warn("Order history fetch error:", err);
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   // Automatic session carry-forward check (UX Completion Sprint)
   useEffect(() => {
@@ -25,40 +87,33 @@ export default function OrderHistoryPage() {
       const savedPhone = sessionStorage.getItem("gangaram_tracking_phone");
       if (savedPhone && savedPhone.length >= 10) {
         setPhone(savedPhone);
-        setLoading(true);
-        fetch(`/api/orders/history?phone=${encodeURIComponent(savedPhone)}`)
-          .then((res) => res.json())
-          .then((data) => {
-            setOrders(data.ok ? data.orders : []);
-          })
-          .catch(() => setOrders([]))
-          .finally(() => {
-            setLoading(false);
-            sessionStorage.removeItem("gangaram_tracking_phone");
-          });
+        sessionStorage.removeItem("gangaram_tracking_phone");
+        fetchHistory(savedPhone);
+      } else if (auth.currentUser?.phoneNumber) {
+        const cleanP = auth.currentUser.phoneNumber.replace("+91", "").trim();
+        setPhone(cleanP);
+        fetchHistory(cleanP);
       }
     }
   }, []);
 
   async function search() {
     if (phone.length < 10) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/orders/history?phone=${encodeURIComponent(phone)}`);
-      const data = await res.json();
-      setOrders(data.ok ? data.orders : []);
-    } catch {
-      setOrders([]);
-    }
-    setLoading(false);
+    await fetchHistory(phone);
   }
 
-  // Live tracking polling when phone number is active
+  // Live tracking polling when orders exist
   useEffect(() => {
-    if (!orders || phone.length < 10) return;
+    if (!orders || phone.length < 10 || !auth.currentUser) return;
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/orders/history?phone=${encodeURIComponent(phone)}`);
+        const u = auth.currentUser;
+        const idToken = u ? await u.getIdToken() : null;
+        if (!idToken) return;
+
+        const res = await fetch(`/api/orders/history?phone=${encodeURIComponent(phone)}`, {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
         const data = await res.json();
         if (data.ok && Array.isArray(data.orders)) {
           setOrders(data.orders);
@@ -70,6 +125,73 @@ export default function OrderHistoryPage() {
 
     return () => clearInterval(interval);
   }, [orders, phone]);
+
+  // Recaptcha Verifier Initialization for inline OTP Verification
+  function getRecaptchaVerifier() {
+    if (typeof window === "undefined") return null;
+    if ((window as any).recaptchaVerifierHistory) {
+      return (window as any).recaptchaVerifierHistory;
+    }
+    try {
+      const verifier = new RecaptchaVerifier(auth, "recaptcha-history-container", {
+        size: "invisible",
+        callback: () => {},
+        "expired-callback": () => {
+          setAuthError("reCAPTCHA session expired. Please retry.");
+        },
+      });
+      (window as any).recaptchaVerifierHistory = verifier;
+      return verifier;
+    } catch (err: any) {
+      console.error("reCAPTCHA init error:", err);
+      return null;
+    }
+  }
+
+  async function handleSendOtp() {
+    setAuthError("");
+    const cleanPhone = phone.trim();
+    if (!/^\d{10}$/.test(cleanPhone)) {
+      setAuthError("Kripya sahi 10-digit mobile number enter karein.");
+      return;
+    }
+    setAuthLoading(true);
+    try {
+      const formatted = `+91${cleanPhone}`;
+      const verifier = getRecaptchaVerifier();
+      if (!verifier) throw new Error("reCAPTCHA initialization failed.");
+
+      const res = await signInWithPhoneNumber(auth, formatted, verifier);
+      setConfirmResult(res);
+      setOtpSent(true);
+    } catch (err: any) {
+      console.error("Firebase Phone Auth error:", err);
+      setAuthError(err?.message || "OTP bhejte waqt problem aayi.");
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function handleVerifyOtp() {
+    setAuthError("");
+    const cleanOtp = otp.trim();
+    if (!/^\d{6}$/.test(cleanOtp) || !confirmResult) {
+      setAuthError("Kripya 6-digit OTP code enter karein.");
+      return;
+    }
+    setAuthLoading(true);
+    try {
+      await confirmResult.confirm(cleanOtp);
+      setOtpSent(false);
+      setAuthError("");
+      await fetchHistory(phone);
+    } catch (err: any) {
+      console.error("OTP verification error:", err);
+      setAuthError("Galat OTP code! Kripya sahi 6-digit code enter karein.");
+    } finally {
+      setAuthLoading(false);
+    }
+  }
 
   async function submitReview() {
     if (rName.trim().length < 2 || rPhone.length < 10 || rText.trim().length < 3) {
@@ -88,6 +210,7 @@ export default function OrderHistoryPage() {
 
   return (
     <main style={{ maxWidth: 520, margin: "0 auto", padding: "20px 16px 60px" }}>
+      <div id="recaptcha-history-container"></div>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
         <b style={{ fontSize: 18 }}>🥛 Gangaram Dairy</b>
         <Link href="/" style={{ color: "#d97706", fontSize: 13, fontWeight: 700 }}>← Menu</Link>
@@ -95,14 +218,51 @@ export default function OrderHistoryPage() {
 
       <h1 style={{ fontSize: 22, fontWeight: 900 }}>📜 Order Tracking & History</h1>
       <p style={{ fontSize: 13.5, color: "#78716c", margin: "6px 0 14px" }}>
-        Apna phone number daalo — aapke saare active orders ka live status aur history dikh jayegi.
+        Apna phone number OTP se verify karein — aapke active orders ka live status dikh jayegi.
       </p>
-      <div style={{ display: "flex", gap: 8 }}>
-        <input className="dash-input" type="tel" placeholder="10 digit phone number" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        <button className="btn-primary" style={{ padding: "0 18px", fontSize: 13.5 }} onClick={search} disabled={loading}>
-          {loading ? "..." : "Dhoondo"}
-        </button>
+
+      {/* Phone Input & Verification Bar */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            className="dash-input"
+            type="tel"
+            placeholder="10 digit phone number"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+          {currentUser ? (
+            <button className="btn-primary" style={{ padding: "0 18px", fontSize: 13.5 }} onClick={search} disabled={loading}>
+              {loading ? "..." : "Dhoondo"}
+            </button>
+          ) : !otpSent ? (
+            <button className="btn-primary" style={{ padding: "0 14px", fontSize: 12.5, whiteSpace: "nowrap" }} onClick={handleSendOtp} disabled={authLoading}>
+              {authLoading ? "Sending..." : "Send OTP"}
+            </button>
+          ) : null}
+        </div>
+
+        {!currentUser && otpSent && (
+          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+            <input
+              className="dash-input"
+              type="text"
+              placeholder="Enter 6-digit OTP"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+            />
+            <button className="btn-primary" style={{ padding: "0 14px", fontSize: 12.5, whiteSpace: "nowrap" }} onClick={handleVerifyOtp} disabled={authLoading}>
+              {authLoading ? "Verifying..." : "Verify OTP"}
+            </button>
+          </div>
+        )}
       </div>
+
+      {authError && (
+        <div style={{ background: "#fee2e2", color: "#b91c1c", border: "1px solid #fca5a5", padding: "8px 12px", borderRadius: 8, fontSize: 12, marginTop: 10 }}>
+          ⚠️ {authError}
+        </div>
+      )}
 
       {orders && (
         <div style={{ marginTop: 16 }}>
