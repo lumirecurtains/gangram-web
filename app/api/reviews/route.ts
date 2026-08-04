@@ -6,6 +6,7 @@ import { adminDb } from "@/lib/firebaseAdmin";
 import { Timestamp } from "firebase-admin/firestore";
 import { verifyOwner, ownerError } from "@/lib/apiAuth";
 import { executeOrderTransitionServer } from "@/lib/tracking";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,10 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  // Rate Limiting Enforcement (Sprint S3 M-1 & M-3)
+  const rl = checkRateLimit(req, "reviews_post", { intervalMs: 60 * 1000, maxRequests: 5 });
+  if (!rl.success && rl.response) return rl.response;
+
   try {
     const body = await req.json();
     const { name, phone, rating, text, orderId, productId } = body;

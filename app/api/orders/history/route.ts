@@ -4,10 +4,15 @@
 import { NextResponse } from "next/server";
 import { adminDb, adminAuth } from "@/lib/firebaseAdmin";
 import { executeOrderTransitionServer } from "@/lib/tracking";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
+  // Rate Limiting Enforcement (Sprint S3 M-1)
+  const rl = checkRateLimit(req, "orders_history_get", { intervalMs: 60 * 1000, maxRequests: 20 });
+  if (!rl.success && rl.response) return rl.response;
+
   try {
     const { searchParams } = new URL(req.url);
     const phone = (searchParams.get("phone") || "").trim();
