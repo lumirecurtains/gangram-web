@@ -1,5 +1,5 @@
 // 📦 /api/orders — POST: order create (server verified) · GET: owner orders list (token se)
-// Sprint 2 Rebuild: Server-side phone auth token verification, delivery eligibility check, delivery fee recomputation, and distanceKm persistence
+// Security Sprint S1: Mandatory Server-side Firebase Phone OTP Verification (C-1) & Server-side Item Price Tampering Validation (C-2)
 
 import { NextResponse } from "next/server";
 import { adminDb, adminAuth } from "@/lib/firebaseAdmin";
@@ -31,32 +31,82 @@ export async function POST(req: Request) {
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "Cart khaali hai" }, { status: 400 });
     }
-    if (typeof itemTotal !== "number") {
+    if (typeof itemTotal !== "number" || typeof deliveryCharge !== "number" || typeof grandTotal !== "number") {
       return NextResponse.json({ error: "Invalid totals" }, { status: 400 });
     }
 
-    // 2️⃣ Optional Server-side ID Token Verification
+    // 2️⃣ C-1: Mandatory Server-Side Firebase Phone OTP Verification (Fail Closed)
     const authHeader = req.headers.get("Authorization");
     const token = idToken || (authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null);
-    if (token) {
-      try {
-        const decoded = await adminAuth.verifyIdToken(token);
-        if (decoded.phone_number) {
-          const verifiedNum = decoded.phone_number.replace("+91", "").trim();
-          const reqNum = String(customerPhone).replace("+91", "").trim();
-          if (verifiedNum && reqNum && verifiedNum !== reqNum) {
-            return NextResponse.json(
-              { error: "Phone number mismatch with verified session" },
-              { status: 403 }
-            );
-          }
-        }
-      } catch (tokenErr) {
-        console.warn("Server ID token verification warning:", tokenErr);
-      }
+
+    if (!token) {
+      return NextResponse.json(
+        { error: "Phone OTP verification failure. Please verify your phone number via OTP before ordering." },
+        { status: 401 }
+      );
     }
 
-    // 3️⃣ Fetch Restaurant Settings for Delivery Rules
+    let decodedToken;
+    try {
+      decodedToken = await adminAuth.verifyIdToken(token);
+    } catch (authErr) {
+      console.warn("Server ID token verification failure:", authErr);
+      return NextResponse.json(
+        { error: "Phone OTP verification failure. Please verify your phone number via OTP before ordering." },
+        { status: 401 }
+      );
+    }
+
+    const verifiedNum = decodedToken.phone_number
+      ? decodedToken.phone_number.replace("+91", "").trim()
+      : "";
+    const reqNum = String(customerPhone).replace("+91", "").trim();
+
+    if (!verifiedNum || !reqNum || verifiedNum !== reqNum) {
+      return NextResponse.json(
+        { error: "Verified phone number does not match order customer phone." },
+        { status: 403 }
+      );
+    }
+
+    // 3️⃣ C-2: Server-Side Item Price Validation (Fetch trusted prices from Firestore)
+    let calculatedItemTotal = 0;
+    const validatedItems = [];
+
+    for (const it of items) {
+      const itemId = String(it.itemId || it.id || "");
+      const qty = Number(it.qty) || 1;
+
+      if (!itemId) {
+        return NextResponse.json({ error: "Invalid item in cart" }, { status: 400 });
+      }
+
+      const itemSnap = await adminDb.collection("menuItems").doc(itemId).get();
+      if (!itemSnap.exists) {
+        return NextResponse.json({ error: `Item '${it.name || itemId}' is no longer available.` }, { status: 400 });
+      }
+
+      const menuItemData = itemSnap.data();
+      const trustedPrice = Number(menuItemData?.price);
+
+      if (isNaN(trustedPrice) || trustedPrice < 0) {
+        return NextResponse.json({ error: `Invalid pricing for item '${it.name}'.` }, { status: 400 });
+      }
+
+      if (menuItemData?.available === false) {
+        return NextResponse.json({ error: `Item '${menuItemData.name || it.name}' is sold out.` }, { status: 400 });
+      }
+
+      calculatedItemTotal += trustedPrice * qty;
+      validatedItems.push({
+        itemId,
+        name: menuItemData?.name || it.name,
+        price: trustedPrice,
+        qty,
+      });
+    }
+
+    // 4️⃣ Fetch Restaurant Settings for Delivery Rules
     const settingsSnap = await adminDb.collection("settings").doc("main").get();
     const settings = settingsSnap.exists ? settingsSnap.data() : {};
 
@@ -65,7 +115,7 @@ export async function POST(req: Request) {
     const perKmCharge = Number(settings?.perKmCharge ?? 10);
     const deliveryBands = Array.isArray(settings?.deliveryBands) ? settings.deliveryBands : [];
 
-    // 4️⃣ Server-side Distance & Eligibility Validation
+    // 5️⃣ Server-side Distance & Eligibility Validation
     const effectiveKm = typeof distanceKm === "number" && distanceKm >= 0 ? distanceKm : (typeof manualKm === "number" ? manualKm : 2);
 
     if (effectiveKm > maxDeliveryKm) {
@@ -75,12 +125,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // 5️⃣ Server-side Delivery Fee Recomputation (Prevents client tampering)
+    // 6️⃣ Server-side Delivery Fee Recomputation
     let expectedDeliveryFee = baseCharge;
     if (typeof distanceKm === "number" && distanceKm >= 0) {
       expectedDeliveryFee = Math.round(baseCharge + distanceKm * perKmCharge);
     } else {
-      // Band fallback
       let matched = false;
       for (const b of deliveryBands) {
         if (effectiveKm <= (b.km ?? 99)) {
@@ -94,9 +143,21 @@ export async function POST(req: Request) {
       }
     }
 
-    const calculatedGrandTotal = itemTotal + expectedDeliveryFee;
+    const calculatedGrandTotal = calculatedItemTotal + expectedDeliveryFee;
 
-    // 6️⃣ Run Transaction for Order Number & Storage
+    // 7️⃣ Price Tampering Mismatch Enforcement (Fail Closed)
+    const itemTotalDiff = Math.abs(itemTotal - calculatedItemTotal);
+    const deliveryDiff = Math.abs(deliveryCharge - expectedDeliveryFee);
+    const grandTotalDiff = Math.abs(grandTotal - calculatedGrandTotal);
+
+    if (itemTotalDiff > 0.01 || deliveryDiff > 0.01 || grandTotalDiff > 0.01) {
+      return NextResponse.json(
+        { error: "Order calculation mismatch. Please refresh cart and try again." },
+        { status: 400 }
+      );
+    }
+
+    // 8️⃣ Run Transaction for Order Number & Storage
     const settingsRef = adminDb.collection("settings").doc("main");
     let orderNo = "";
     await adminDb.runTransaction(async (tx) => {
@@ -122,8 +183,8 @@ export async function POST(req: Request) {
       customerName: customerName.trim(),
       customerPhone: cleanPhone,
       address: address.trim(),
-      items,
-      itemTotal,
+      items: validatedItems,
+      itemTotal: calculatedItemTotal,
       deliveryCharge: expectedDeliveryFee,
       grandTotal: calculatedGrandTotal,
       distanceKm: typeof distanceKm === "number" ? distanceKm : null,
@@ -156,9 +217,9 @@ export async function POST(req: Request) {
       )
       .catch(() => {});
 
-    // Sprint A1 Task 5: Increment Product Intelligence Orders Count
-    if (Array.isArray(items)) {
-      for (const it of items) {
+    // Increment Product Intelligence Orders Count
+    if (Array.isArray(validatedItems)) {
+      for (const it of validatedItems) {
         if (it?.itemId) {
           await adminDb
             .collection("menuItems")
@@ -169,10 +230,16 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({ ok: true, orderNo, orderId: orderRef.id, deliveryCharge: expectedDeliveryFee, grandTotal: calculatedGrandTotal });
+    return NextResponse.json({
+      ok: true,
+      orderNo,
+      orderId: orderRef.id,
+      deliveryCharge: expectedDeliveryFee,
+      grandTotal: calculatedGrandTotal,
+    });
   } catch (e: any) {
     console.error("Order API error:", e);
-    return NextResponse.json({ error: e?.message || "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal order processing error" }, { status: 500 });
   }
 }
 
