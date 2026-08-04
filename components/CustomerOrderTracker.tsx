@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Order, OrderStatus } from "@/lib/types";
 import { STAGE_MESSAGES } from "@/lib/tracking-constants";
+import { auth } from "@/lib/firebase";
 
 export const CUSTOMER_TRACKING_STAGES: { stage: OrderStatus; label: string; icon: string }[] = [
   { stage: "placed", label: "Order Received", icon: "📋" },
@@ -62,14 +63,27 @@ export function CustomerOrderTracker({
   async function handleConfirmDelivery() {
     setConfirming(true);
     try {
+      const currentUser = auth.currentUser;
+      const idToken = currentUser ? await currentUser.getIdToken() : null;
+
+      if (!idToken) {
+        alert("Delivery confirmation ke liye phone OTP verification zaroori hai.");
+        setConfirming(false);
+        return;
+      }
+
       const res = await fetch("/api/orders/status", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
         body: JSON.stringify({
           orderId: order.id,
           targetStatus: "customer_confirmed",
           actor: "customer",
           deliveryProofNote: proofNote.trim() || undefined,
+          idToken,
         }),
       });
 
