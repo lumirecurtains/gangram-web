@@ -1,5 +1,5 @@
 // 📦 /api/orders/status — POST: Execute Server-side Order Status Transition
-// Sprint T1 & Security Hardening: Fail-Closed Customer & Owner Authorization Gate
+// Security Hardening: Strict Fail-Closed Actor Authorization (No client "system" spoofing allowed)
 
 import { NextResponse } from "next/server";
 import { adminDb, adminAuth } from "@/lib/firebaseAdmin";
@@ -44,7 +44,15 @@ export async function POST(req: Request) {
       "review_completed",
     ];
 
-    let actor: StatusActor = requestedActor || "owner";
+    // Client requests can NEVER claim "system" actor via public HTTP API
+    if (requestedActor === "system") {
+      return NextResponse.json(
+        { error: "System actor cannot be claimed by client requests" },
+        { status: 403 }
+      );
+    }
+
+    let actor: StatusActor = "customer";
 
     // 1️⃣ Owner Statuses: Strictly require verifyOwner token
     if (ownerOnlyStatuses.includes(targetStatus as OrderStatus) || requestedActor === "owner") {
@@ -57,9 +65,7 @@ export async function POST(req: Request) {
     }
     // 2️⃣ Customer Statuses (customer_confirmed, review_completed)
     else if (customerStatuses.includes(targetStatus as OrderStatus)) {
-      if (requestedActor === "system") {
-        actor = "system";
-      } else if (requestedActor === "owner") {
+      if (requestedActor === "owner") {
         try {
           await verifyOwner(req);
           actor = "owner";
