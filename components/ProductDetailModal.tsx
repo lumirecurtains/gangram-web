@@ -55,20 +55,25 @@ export default function ProductDetailModal({
     setShowReviewForm(false);
   }, [product]);
 
+  function loadReviews() {
+    fetch("/api/reviews")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.ok && Array.isArray(data.reviews)) {
+          setReviews(data.reviews);
+        } else {
+          setReviews([]);
+        }
+      })
+      .catch(() => setReviews([]));
+  }
+
   useEffect(() => {
     const unsub1 = onMenuItems(setAllItems);
-    const unsub2 = onSnapshot(
-      collection(db, "reviews"),
-      (snap) => {
-        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Review);
-        setReviews(list.filter((r) => !r.hidden));
-      },
-      () => setReviews([])
-    );
+    loadReviews();
 
     return () => {
       unsub1();
-      unsub2();
     };
   }, []);
 
@@ -113,7 +118,7 @@ export default function ProductDetailModal({
     setShowReviewForm(true);
   }
 
-  // Save / Update Review Action
+  // Save / Update Review Action via API
   async function handleSubmitReview(e: React.FormEvent) {
     e.preventDefault();
     if (!product) return;
@@ -123,33 +128,26 @@ export default function ProductDetailModal({
     }
     setSubmittingReview(true);
     try {
-      const reviewId = existingReviewId || `rev_${product.id}_${Date.now()}`;
-      const payload = {
-        productId: product.id,
-        name: reviewerName.trim(),
-        phone: reviewerPhone.trim(),
-        rating: userRating,
-        text: reviewText.trim(),
-        hidden: false,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      };
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId: product.id,
+          name: reviewerName.trim(),
+          phone: reviewerPhone.trim(),
+          rating: userRating,
+          text: reviewText.trim(),
+        }),
+      });
 
-      await setDoc(doc(db, "reviews", reviewId), payload, { merge: true });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "Review submission failed");
+      }
 
-      // Recalculate and update product avg rating & review count
-      const updatedList = [...productReviews.filter((r) => r.id !== reviewId), payload as any];
-      const newAvg = Number(
-        (updatedList.reduce((acc, r) => acc + (r.rating || 5), 0) / updatedList.length).toFixed(1)
-      );
-
-      await updateDoc(doc(db, "menuItems", product.id), {
-        avgRating: newAvg,
-        reviewCount: updatedList.length,
-      }).catch(() => {});
-
-      alert(existingReviewId ? "✅ Review update ho gaya!" : "✅ Swaadish Review submit ho gaya!");
+      alert("✅ Swaadish Review submit ho gaya! Dhanyawad 🙏");
       setShowReviewForm(false);
+      loadReviews();
     } catch (err: any) {
       alert("Review submit error: " + (err?.message || err));
     } finally {

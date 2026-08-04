@@ -1,5 +1,5 @@
 // 📦 /api/orders/status — POST: Execute Server-side Order Status Transition
-// Sprint T1 & Security Hardening: Default-Deny Authorization Gate
+// Sprint T1 & Security Hardening: Fail-Closed Customer & Owner Authorization Gate
 
 import { NextResponse } from "next/server";
 import { adminDb, adminAuth } from "@/lib/firebaseAdmin";
@@ -67,32 +67,42 @@ export async function POST(req: Request) {
           return ownerError(authErr);
         }
       } else {
-        // Verify customer token if provided, or verify order existence
+        // Customer Status Transition: Require valid Firebase Phone Auth Token (Fail Closed)
         const authHeader = req.headers.get("Authorization");
         const token = idToken || (authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null);
 
-        if (token) {
-          try {
-            const decoded = await adminAuth.verifyIdToken(token);
-            const verifiedPhone = decoded.phone_number ? decoded.phone_number.replace("+91", "").trim() : "";
+        if (!token) {
+          return NextResponse.json(
+            { error: "Customer status transition requires phone OTP token verification" },
+            { status: 401 }
+          );
+        }
 
-            const orderSnap = await adminDb.collection("orders").doc(orderId).get();
-            if (!orderSnap.exists) {
-              return NextResponse.json({ error: "Order not found" }, { status: 404 });
-            }
+        let decoded;
+        try {
+          decoded = await adminAuth.verifyIdToken(token);
+        } catch (tokenErr) {
+          console.warn("Status transition customer token verification failure:", tokenErr);
+          return NextResponse.json(
+            { error: "Invalid or expired phone OTP verification token" },
+            { status: 401 }
+          );
+        }
 
-            const orderData = orderSnap.data();
-            const orderPhone = String(orderData?.customerPhone || "").replace("+91", "").trim();
+        const verifiedPhone = decoded.phone_number ? decoded.phone_number.replace("+91", "").trim() : "";
+        const orderSnap = await adminDb.collection("orders").doc(orderId).get();
+        if (!orderSnap.exists) {
+          return NextResponse.json({ error: "Order not found" }, { status: 404 });
+        }
 
-            if (verifiedPhone && orderPhone && verifiedPhone !== orderPhone) {
-              return NextResponse.json(
-                { error: "Verified phone does not match order phone" },
-                { status: 403 }
-              );
-            }
-          } catch (tokenErr) {
-            console.warn("Status transition customer token verification notice:", tokenErr);
-          }
+        const orderData = orderSnap.data();
+        const orderPhone = String(orderData?.customerPhone || "").replace("+91", "").trim();
+
+        if (!verifiedPhone || !orderPhone || verifiedPhone !== orderPhone) {
+          return NextResponse.json(
+            { error: "Verified phone does not match order customer phone" },
+            { status: 403 }
+          );
         }
 
         actor = "customer";
