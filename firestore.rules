@@ -7,8 +7,7 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Helper: kya ye user owner/super admin hai?
-    // settings/main mein ownerEmails array hota hai (rules wahan se padhti hain)
+    // Helper: owner / super admin check via settings/main ownerEmails
     function isOwner() {
       return signedIn() &&
         (get(/databases/$(database)/documents/settings/main)).data.ownerEmails.hasAny([request.auth.token.email]);
@@ -35,7 +34,7 @@ service cloud.firestore {
     // ---------- ORDERS (server-side admin SDK se bante hain — client write deny) ----------
     match /orders/{orderId} {
       allow read: if isOwner();
-      allow create: if false;   // sirf server (admin SDK) create karta hai
+      allow create: if false;
       allow update, delete: if false;
     }
 
@@ -45,10 +44,9 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // ---------- REVIEWS (public read, customer create, owner moderate) ----------
-    // Reviews (public read, phone-validated create, owner moderate)
+    // ---------- REVIEWS (public access via /api/reviews, direct SDK read restricted to owner, customer create, owner moderate) ----------
     match /reviews/{reviewId} {
-      allow read: if true;
+      allow read: if isOwner();
       allow create: if request.resource.data.phone is string
         && request.resource.data.phone.size() >= 10
         && request.resource.data.rating is number

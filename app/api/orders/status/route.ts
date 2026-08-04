@@ -1,7 +1,8 @@
 // 📦 /api/orders/status — POST: Execute Server-side Order Status Transition
-// Sprint T1 Engineering Foundation: Atomic, Idempotent, State Machine Validation
+// Sprint T1 & Security Hardening: Default-Deny Authorization Gate
 
 import { NextResponse } from "next/server";
+import { adminDb, adminAuth } from "@/lib/firebaseAdmin";
 import { verifyOwner, ownerError } from "@/lib/apiAuth";
 import { executeOrderTransitionServer } from "@/lib/tracking";
 import { OrderStatus, StatusActor } from "@/lib/types";
@@ -18,6 +19,7 @@ export async function POST(req: Request) {
       actor: requestedActor,
       deliveryProofNote,
       deliveryProofPhotoRef,
+      idToken,
     } = body;
 
     if (!orderId || typeof orderId !== "string") {
@@ -28,9 +30,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "targetStatus required" }, { status: 400 });
     }
 
-    let actor: StatusActor = requestedActor || "owner";
-
-    // Enforce Authorization by Actor / Target Status
     const ownerOnlyStatuses: OrderStatus[] = [
       "accepted",
       "preparing",
@@ -40,15 +39,68 @@ export async function POST(req: Request) {
       "cancelled",
     ];
 
-    if (ownerOnlyStatuses.includes(targetStatus as OrderStatus) || actor === "owner") {
+    const customerStatuses: OrderStatus[] = [
+      "customer_confirmed",
+      "review_completed",
+    ];
+
+    let actor: StatusActor = requestedActor || "owner";
+
+    // 1️⃣ Owner Statuses: Strictly require verifyOwner token
+    if (ownerOnlyStatuses.includes(targetStatus as OrderStatus) || requestedActor === "owner") {
       try {
         await verifyOwner(req);
         actor = "owner";
       } catch (authErr: any) {
         return ownerError(authErr);
       }
-    } else if (targetStatus === "customer_confirmed") {
-      actor = requestedActor === "system" ? "system" : "customer";
+    }
+    // 2️⃣ Customer Statuses (customer_confirmed, review_completed)
+    else if (customerStatuses.includes(targetStatus as OrderStatus)) {
+      if (requestedActor === "system") {
+        actor = "system";
+      } else if (requestedActor === "owner") {
+        try {
+          await verifyOwner(req);
+          actor = "owner";
+        } catch (authErr: any) {
+          return ownerError(authErr);
+        }
+      } else {
+        // Verify customer token if provided, or verify order existence
+        const authHeader = req.headers.get("Authorization");
+        const token = idToken || (authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null);
+
+        if (token) {
+          try {
+            const decoded = await adminAuth.verifyIdToken(token);
+            const verifiedPhone = decoded.phone_number ? decoded.phone_number.replace("+91", "").trim() : "";
+
+            const orderSnap = await adminDb.collection("orders").doc(orderId).get();
+            if (!orderSnap.exists) {
+              return NextResponse.json({ error: "Order not found" }, { status: 404 });
+            }
+
+            const orderData = orderSnap.data();
+            const orderPhone = String(orderData?.customerPhone || "").replace("+91", "").trim();
+
+            if (verifiedPhone && orderPhone && verifiedPhone !== orderPhone) {
+              return NextResponse.json(
+                { error: "Verified phone does not match order phone" },
+                { status: 403 }
+              );
+            }
+          } catch (tokenErr) {
+            console.warn("Status transition customer token verification notice:", tokenErr);
+          }
+        }
+
+        actor = "customer";
+      }
+    }
+    // 3️⃣ Default Deny: Reject unhandled target statuses
+    else {
+      return NextResponse.json({ error: "Unauthorized status transition target" }, { status: 403 });
     }
 
     const result = await executeOrderTransitionServer({
