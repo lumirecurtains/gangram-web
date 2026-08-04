@@ -19,6 +19,27 @@ export default function OrderHistoryPage() {
   const [rText, setRText] = useState("");
   const [rMsg, setRMsg] = useState("");
 
+  // Automatic session carry-forward check (UX Completion Sprint)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedPhone = sessionStorage.getItem("gangaram_tracking_phone");
+      if (savedPhone && savedPhone.length >= 10) {
+        setPhone(savedPhone);
+        setLoading(true);
+        fetch(`/api/orders/history?phone=${encodeURIComponent(savedPhone)}`)
+          .then((res) => res.json())
+          .then((data) => {
+            setOrders(data.ok ? data.orders : []);
+          })
+          .catch(() => setOrders([]))
+          .finally(() => {
+            setLoading(false);
+            sessionStorage.removeItem("gangaram_tracking_phone");
+          });
+      }
+    }
+  }, []);
+
   async function search() {
     if (phone.length < 10) return;
     setLoading(true);

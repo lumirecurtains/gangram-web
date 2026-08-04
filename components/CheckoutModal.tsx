@@ -305,6 +305,11 @@ export default function CheckoutModal({ settings }: { settings: Settings }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Order fail");
 
+      // Save customer phone to Session Storage for automatic tracking carry-forward
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("gangaram_tracking_phone", finalPhone);
+      }
+
       // Success Modal Display
       document.getElementById("modal")?.classList.remove("show");
       showSuccess(data.orderNo);
